@@ -4,137 +4,716 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación · Volúmenes</title>
+
 <style>
-:root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}main{max-width:1600px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}h1{font-size:25px;margin:0 0 8px}p{margin:0;color:#61746a}button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}button{cursor:pointer}button.primary{background:var(--verde);color:white}button:disabled{opacity:.5;cursor:wait}.filters,.cards{display:grid;gap:12px;margin-bottom:18px}.filters{grid-template-columns:repeat(5,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}label{font-weight:bold;font-size:12px}select{display:block;width:100%;margin-top:7px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}.card span{color:#61746a;font-size:12px}.card strong{display:block;font-size:23px;margin-top:7px}.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}.scroll{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}tbody tr:nth-child(even){background:#f6f9f7}tbody tr:hover{background:#eaf3ee}td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}tfoot{font-weight:bold;background:#e4eee8}#status{margin:10px 0;line-height:1.5}#status.error{color:#ad2626}.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}.note{font-size:12px;margin-top:14px;line-height:1.5}@media(max-width:800px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters label:last-child{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}.card strong{font-size:20px}table{min-width:1050px}.toolbar{flex-wrap:wrap}}
+:root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}
+main{max-width:1600px;margin:auto;padding:24px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}
+h1{font-size:25px;margin:0 0 8px}
+p{margin:0;color:#61746a}
+button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}
+button{cursor:pointer}
+button.primary{background:var(--verde);color:white}
+button:disabled{opacity:.5;cursor:default}
+.filters,.cards{display:grid;gap:12px;margin-bottom:18px}
+.filters{grid-template-columns:repeat(5,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}
+label{font-weight:bold;font-size:12px}
+select{display:block;width:100%;margin-top:7px}
+.cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}
+.card span{color:#61746a;font-size:12px}
+.card strong{display:block;font-size:23px;margin-top:7px}
+.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}
+.scroll{overflow:auto;max-height:65vh}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}
+th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}
+th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}
+tbody tr:nth-child(even){background:#f6f9f7}
+tbody tr:hover{background:#eaf3ee}
+td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}
+tfoot{font-weight:bold;background:#e4eee8}
+#status{margin:10px 0;line-height:1.5}
+#status.error{color:#ad2626}
+.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}
+.note{font-size:12px;margin-top:14px;line-height:1.5}
+@media(max-width:800px){
+ main{padding:12px}
+ header{align-items:flex-start;flex-direction:column}
+ .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .filters label:last-child{grid-column:1/-1}
+ .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ h1{font-size:22px}
+ .card strong{font-size:20px}
+ table{min-width:1050px}
+ .toolbar{flex-wrap:wrap}
+}
 </style>
 </head>
+
 <body>
 <main>
-<header><div><h1>Liquidación · Volúmenes</h1><p id="updated">Consulta de neto, neto flete y metros cúbicos</p></div><div><button id="clear">Limpiar filtros</button> <button class="primary" id="refresh">Actualizar</button></div></header>
+<header>
+ <div>
+  <h1>Liquidación · Volúmenes</h1>
+  <p id="updated">Consulta de neto, neto flete y metros cúbicos</p>
+ </div>
+ <div>
+  <button id="clear">Limpiar filtros</button>
+  <button class="primary" id="refresh">Actualizar</button>
+ </div>
+</header>
+
 <section class="filters" aria-label="Filtros">
-<label>Año liquidación<select id="anio_liquidacion"></select></label>
-<label>Mes liquidación<select id="mes_liquidacion"></select></label>
-<label>Nombre del mes<select id="mes_nombre"></select></label>
-<label>Quincena<select id="quincena"></select></label>
-<label>Origen<select id="origen"></select></label>
+ <label>
+  Año liquidación
+  <select id="anio_liquidacion"></select>
+ </label>
+ <label>
+  Mes liquidación
+  <select id="mes_liquidacion"></select>
+ </label>
+ <label>
+  Nombre del mes
+  <select id="mes_nombre"></select>
+ </label>
+ <label>
+  Quincena
+  <select id="quincena"></select>
+ </label>
+ <label>
+  Nombre FAS
+  <select id="nombrefas"></select>
+ </label>
 </section>
+
 <section class="cards">
-<div class="card"><span>Neto total · t</span><strong id="neto">—</strong></div>
-<div class="card"><span>Neto flete total · t</span><strong id="neto_flete">—</strong></div>
-<div class="card"><span>Metros cúbicos total</span><strong id="metros_cubicos">—</strong></div>
-<div class="card"><span>Densidad · m³ / t</span><strong id="densidad">—</strong></div>
+ <div class="card">
+  <span>Neto total · t</span>
+  <strong id="neto">—</strong>
+ </div>
+ <div class="card">
+  <span>Neto flete total · t</span>
+  <strong id="neto_flete">—</strong>
+ </div>
+ <div class="card">
+  <span>Metros cúbicos total</span>
+  <strong id="metros_cubicos">—</strong>
+ </div>
+ <div class="card">
+  <span>Densidad · t / m³</span>
+  <strong id="densidad">—</strong>
+ </div>
 </section>
-<div id="status" role="status" aria-live="polite">Cargando datos…</div>
+
+<div id="status" role="status" aria-live="polite">
+ Cargando datos…
+</div>
+
 <section class="panel">
-<div class="toolbar"><b id="count">Resumen por origen, depósito, período y producto</b><button id="export" disabled>Exportar CSV</button></div>
-<div class="scroll"><table><thead><tr id="headers"></tr></thead><tbody id="body"></tbody><tfoot id="footer"></tfoot></table></div>
-<div class="pager"><button id="prev">Anterior</button><span id="page"></span><button id="next">Siguiente</button></div>
+ <div class="toolbar">
+  <b id="count">Resumen por origen, depósito, período y producto</b>
+  <button id="export" disabled>Exportar CSV</button>
+ </div>
+
+ <div class="scroll">
+  <table>
+   <thead><tr id="headers"></tr></thead>
+   <tbody id="body"></tbody>
+   <tfoot id="footer"></tfoot>
+  </table>
+ </div>
+
+ <div class="pager">
+  <button id="prev">Anterior</button>
+  <span id="page"></span>
+  <button id="next">Siguiente</button>
+ </div>
 </section>
-<p class="note">Período desde fecharto: mes 26–25; quincena 1: 26–10; quincena 2: 11–25. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = metros cúbicos / neto en toneladas. Si el neto es cero, se muestra «—». Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
+
+<p class="note">
+ Período desde fecharto: mes 26–25; quincena 1: 26–10;
+ quincena 2: 11–25.
+ Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000.
+ Diferencia = neto flete − neto.
+ Densidad = neto en toneladas / metros cúbicos.
+ Si los metros cúbicos son cero, se muestra «—».
+ Los totales incluyen todos los grupos filtrados.
+</p>
 </main>
+
 <script>
 'use strict';
-const URL_JSON='https://dl.dropbox.com/scl/fi/s9gpzuap6rh2neq5dk7ni/RemitoLiquidacionMetrosCubicos.json?rlkey=ckfcmwxb33vtrui75myvhro7b&dl=1';
-const filters=['anio_liquidacion','mes_liquidacion','mes_nombre','quincena','origen'];
-const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_nombre','quincena','nombre_prod'];
-const sums=['neto','neto_flete','metros_cubicos','importe_flete'];
-const numericColumns=[...sums,'diferencia'];
-const columns=[...dimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad'];
-const labels=['Origen','Depósito','Año liquidación','Mes liquidación','Nombre del mes','Quincena','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (m³/t)'];
-const $=id=>document.getElementById(id);
-const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
-const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:4,maximumFractionDigits:4});
-let rows=[],groups=[],page=0,sortKey='origen',direction=1,ready=false;
+
+const URL_JSON =
+'https://dl.dropbox.com/scl/fi/s9gpzuap6rh2neq5dk7ni/RemitoLiquidacionMetrosCubicos.json?rlkey=ckfcmwxb33vtrui75myvhro7b&dl=1';
+
+const filters = [
+ 'anio_liquidacion',
+ 'mes_liquidacion',
+ 'mes_nombre',
+ 'quincena',
+ 'nombrefas'
+];
+
+const dimensions = [
+ 'origen',
+ 'deposito',
+ 'anio_liquidacion',
+ 'mes_liquidacion',
+ 'mes_nombre',
+ 'quincena',
+ 'nombre_prod'
+];
+
+const sums = [
+ 'neto',
+ 'neto_flete',
+ 'metros_cubicos',
+ 'importe_flete'
+];
+
+const numericColumns = [...sums,'diferencia'];
+
+const columns = [
+ ...dimensions,
+ 'neto',
+ 'neto_flete',
+ 'diferencia',
+ 'metros_cubicos',
+ 'importe_flete',
+ 'densidad'
+];
+
+const labels = [
+ 'Origen',
+ 'Depósito',
+ 'Año liquidación',
+ 'Mes liquidación',
+ 'Nombre del mes',
+ 'Quincena',
+ 'Producto',
+ 'Neto (t)',
+ 'Neto flete (t)',
+ 'Diferencia (t)',
+ 'Metros cúbicos',
+ 'Importe flete',
+ 'Densidad (t/m³)'
+];
+
+const months = [
+ 'ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
+ 'JULIO','AGOSTO','SETIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'
+];
+
+const $ = id => document.getElementById(id);
+
+const fmt = new Intl.NumberFormat('es-UY',{
+ minimumFractionDigits:2,
+ maximumFractionDigits:2
+});
+
+const densityFmt = new Intl.NumberFormat('es-UY',{
+ minimumFractionDigits:4,
+ maximumFractionDigits:4
+});
+
+let rows=[];
+let groups=[];
+let page=0;
+let sortKey='origen';
+let direction=1;
+let ready=false;
+
 const PAGE_SIZE=100;
-function text(value){return value==null?'':String(value).trim();}
+
+function text(value){
+ return value==null?'':String(value).trim();
+}
+
 function number(value){
  if(value==null||value==='')return 0;
- if(typeof value==='number'){if(Number.isFinite(value))return value;throw Error('Se encontró un número inválido.');}
+
+ if(typeof value==='number'){
+  if(Number.isFinite(value))return value;
+  throw Error('Se encontró un número inválido.');
+ }
+
  let s=String(value).trim().replace(/\s/g,'');
  if(!s)return 0;
- if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
- const n=Number(s);if(!Number.isFinite(n))throw Error('Valor numérico inválido: '+value);return n;
+
+ if(s.includes(',')){
+  s=s.replace(/\./g,'').replace(',','.');
+ }
+
+ const n=Number(s);
+
+ if(!Number.isFinite(n)){
+  throw Error('Valor numérico inválido: '+value);
+ }
+
+ return n;
 }
-const months=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SETIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+
 function normalize(r){
- const m=text(r.fecharto).match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/);
+ const m=text(r.fecharto).match(
+  /^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/
+ );
+
  if(!m)throw Error('Fecha inválida: '+r.fecharto);
- const year=Number(m[1]),month=Number(m[2]),day=Number(m[3]);
+
+ const year=Number(m[1]);
+ const month=Number(m[2]);
+ const day=Number(m[3]);
  const date=new Date(Date.UTC(year,month-1,day));
- if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)throw Error('Fecha inválida: '+r.fecharto);
- const period=new Date(Date.UTC(year,month-1+(day>=26?1:0),1));
- const p={origen:text(r.origen),deposito:text(r.deposito),nombre_prod:text(r.nombreprod2),
- anio_liquidacion:String(period.getUTCFullYear()),mes_liquidacion:String(period.getUTCMonth()+1),
- mes_nombre:months[period.getUTCMonth()],quincena:day>=26||day<=10?'1':'2'};
- for(const k of sums)p[k]=number(r[k]);
- // Neto de remitos2 ya está en toneladas. Neto flete viene en kg.
- p.neto_flete/=1000;
- p.sin_mcs=r.metros_cubicos==null||text(r.metros_cubicos)==='';
- p.sin_importe=r.importe_flete==null||text(r.importe_flete)==='';
+
+ if(
+  date.getUTCFullYear()!==year||
+  date.getUTCMonth()!==month-1||
+  date.getUTCDate()!==day
+ ){
+  throw Error('Fecha inválida: '+r.fecharto);
+ }
+
+ const period=new Date(
+  Date.UTC(year,month-1+(day>=26?1:0),1)
+ );
+
+ const p={
+  nombrefas:text(r.nombrefas),
+  origen:text(r.origen),
+  deposito:text(r.deposito),
+  nombre_prod:text(r.nombreprod2),
+  anio_liquidacion:String(period.getUTCFullYear()),
+  mes_liquidacion:String(period.getUTCMonth()+1),
+  mes_nombre:months[period.getUTCMonth()],
+  quincena:day>=26||day<=10?'1':'2'
+ };
+
+ for(const k of sums){
+  p[k]=number(r[k]);
+ }
+
+ // Neto de remitos2 ya está en toneladas.
+ // Neto flete viene en kilogramos: se convierte a toneladas.
+ p.neto_flete=p.neto_flete/1000;
+
+ p.sin_mcs=
+  r.metros_cubicos==null||text(r.metros_cubicos)==='';
+
+ p.sin_importe=
+  r.importe_flete==null||text(r.importe_flete)==='';
+
  return p;
 }
-function compare(a,b){return String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'});}
-function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
-function matches(row,except){return filters.every(k=>k===except||!$(k).value||row[k]===$(k).value);}
+
+function compare(a,b){
+ return String(a).localeCompare(String(b),'es',{
+  numeric:true,
+  sensitivity:'base'
+ });
+}
+
+function status(message,error=false){
+ $('status').textContent=message;
+ $('status').classList.toggle('error',error);
+}
+
+function matches(row,except){
+ return filters.every(k=>
+  k===except||!$(k).value||row[k]===$(k).value
+ );
+}
+
 function options(){
- const selected=Object.fromEntries(filters.map(k=>[k,$(k).value]));
+ const selected=Object.fromEntries(
+  filters.map(k=>[k,$(k).value])
+ );
+
  for(const k of filters){
-  const values=[...new Set(rows.filter(r=>matches(r,k)).map(r=>r[k]).filter(Boolean))].sort(compare);
-  $(k).replaceChildren(new Option('Todos',''),...values.map(v=>new Option(v,v)));
-  if(values.includes(selected[k]))$(k).value=selected[k];
+  const values=[
+   ...new Set(
+    rows
+     .filter(r=>matches(r,k))
+     .map(r=>r[k])
+     .filter(Boolean)
+   )
+  ].sort(compare);
+
+  $(k).replaceChildren(
+   new Option('Todos',''),
+   ...values.map(v=>new Option(v,v))
+  );
+
+  if(values.includes(selected[k])){
+   $(k).value=selected[k];
+  }
  }
 }
+
 function aggregate(source){
  const map=new Map();
+
  for(const row of source){
-  const key=JSON.stringify(dimensions.map(k=>row[k]));
-  if(!map.has(key))map.set(key,{...Object.fromEntries(dimensions.map(k=>[k,row[k]])),neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0});
-  const group=map.get(key);for(const k of sums)group[k]+=row[k];
+  const key=JSON.stringify(
+   dimensions.map(k=>row[k])
+  );
+
+  if(!map.has(key)){
+   map.set(key,{
+    ...Object.fromEntries(
+     dimensions.map(k=>[k,row[k]])
+    ),
+    neto:0,
+    neto_flete:0,
+    metros_cubicos:0,
+    importe_flete:0
+   });
+  }
+
+  const group=map.get(key);
+
+  for(const k of sums){
+   group[k]+=row[k];
+  }
  }
- return [...map.values()].map(g=>({...g,diferencia:g.neto_flete-g.neto,densidad:g.neto===0?null:g.metros_cubicos/g.neto}));
+
+ return [...map.values()].map(g=>({
+  ...g,
+  diferencia:g.neto_flete-g.neto,
+
+  // DENSIDAD = NETO EN TONELADAS / METROS CÚBICOS.
+  densidad:g.metros_cubicos===0
+   ?null
+   :g.neto/g.metros_cubicos
+ }));
 }
-function totals(){const t={neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0};for(const g of groups)for(const k of sums)t[k]+=g[k];t.diferencia=t.neto_flete-t.neto;t.densidad=t.neto===0?null:t.metros_cubicos/t.neto;return t;}
-function display(k,v){return k==='densidad'?(v==null?'—':densityFmt.format(v)):numericColumns.includes(k)?fmt.format(v):v||'—';}
-function cell(tr,value){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+
+function totals(){
+ const t={
+  neto:0,
+  neto_flete:0,
+  metros_cubicos:0,
+  importe_flete:0
+ };
+
+ for(const g of groups){
+  for(const k of sums){
+   t[k]+=g[k];
+  }
+ }
+
+ t.diferencia=t.neto_flete-t.neto;
+
+ // Densidad total: relación entre las sumas.
+ t.densidad=t.metros_cubicos===0
+  ?null
+  :t.neto/t.metros_cubicos;
+
+ return t;
+}
+
+function display(k,v){
+ if(k==='densidad'){
+  return v==null?'—':densityFmt.format(v);
+ }
+
+ if(numericColumns.includes(k)){
+  return fmt.format(v);
+ }
+
+ return v||'—';
+}
+
+function cell(tr,value){
+ const td=document.createElement('td');
+ td.textContent=value;
+ tr.append(td);
+}
+
 function render(){
- groups.sort((a,b)=>{if(a[sortKey]==null)return b[sortKey]==null?0:1;if(b[sortKey]==null)return -1;return direction*(numericColumns.includes(sortKey)||sortKey==='densidad'?a[sortKey]-b[sortKey]:compare(a[sortKey],b[sortKey]));});
- const t=totals();for(const k of ['neto','neto_flete','metros_cubicos','densidad'])$(k).textContent=display(k,t[k]);
+ groups.sort((a,b)=>{
+  if(a[sortKey]==null){
+   return b[sortKey]==null?0:1;
+  }
+
+  if(b[sortKey]==null)return -1;
+
+  const numeric=
+   numericColumns.includes(sortKey)||
+   sortKey==='densidad';
+
+  return direction*(
+   numeric
+    ?a[sortKey]-b[sortKey]
+    :compare(a[sortKey],b[sortKey])
+  );
+ });
+
+ const t=totals();
+
+ for(const k of [
+  'neto','neto_flete','metros_cubicos','densidad'
+ ]){
+  $(k).textContent=display(k,t[k]);
+ }
+
  $('body').replaceChildren();
- for(const g of groups.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE)){const tr=document.createElement('tr');for(const k of columns)cell(tr,display(k,g[k]));$('body').append(tr);}
- if(!groups.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=columns.length;td.textContent=ready?'No hay registros para estos filtros.':'Esperando datos…';tr.append(td);$('body').append(tr);}
- const totalRow=document.createElement('tr');const title=document.createElement('td');title.colSpan=dimensions.length;title.textContent='TOTAL FILTRADO';totalRow.append(title);for(const k of columns.slice(dimensions.length))cell(totalRow,display(k,t[k]));$('footer').replaceChildren(totalRow);
- $('count').textContent=groups.length.toLocaleString('es-UY')+' grupos';
- const pages=Math.max(1,Math.ceil(groups.length/PAGE_SIZE));$('page').textContent=`Página ${page+1} de ${pages}`;$('prev').disabled=page===0;$('next').disabled=page+1>=pages;$('export').disabled=!groups.length;
- document.querySelectorAll('th').forEach((th,i)=>{th.setAttribute('aria-sort',columns[i]===sortKey?(direction===1?'ascending':'descending'):'none');th.firstChild.textContent=labels[i]+(columns[i]===sortKey?(direction===1?' ▲':' ▼'):'');});
+
+ const visible=groups.slice(
+  page*PAGE_SIZE,
+  (page+1)*PAGE_SIZE
+ );
+
+ for(const g of visible){
+  const tr=document.createElement('tr');
+
+  for(const k of columns){
+   cell(tr,display(k,g[k]));
+  }
+
+  $('body').append(tr);
+ }
+
+ if(!groups.length){
+  const tr=document.createElement('tr');
+  const td=document.createElement('td');
+
+  td.colSpan=columns.length;
+  td.textContent=ready
+   ?'No hay registros para estos filtros.'
+   :'Esperando datos…';
+
+  tr.append(td);
+  $('body').append(tr);
+ }
+
+ const totalRow=document.createElement('tr');
+ const title=document.createElement('td');
+
+ title.colSpan=dimensions.length;
+ title.textContent='TOTAL FILTRADO';
+ totalRow.append(title);
+
+ for(const k of columns.slice(dimensions.length)){
+  cell(totalRow,display(k,t[k]));
+ }
+
+ $('footer').replaceChildren(totalRow);
+
+ $('count').textContent=
+  groups.length.toLocaleString('es-UY')+' grupos';
+
+ const pages=Math.max(
+  1,Math.ceil(groups.length/PAGE_SIZE)
+ );
+
+ $('page').textContent=
+  `Página ${page+1} de ${pages}`;
+
+ $('prev').disabled=page===0;
+ $('next').disabled=page+1>=pages;
+ $('export').disabled=!groups.length;
+
+ document.querySelectorAll('th').forEach((th,i)=>{
+  const active=columns[i]===sortKey;
+
+  th.setAttribute(
+   'aria-sort',
+   active
+    ?direction===1?'ascending':'descending'
+    :'none'
+  );
+
+  th.firstChild.textContent=
+   labels[i]+(active?(direction===1?' ▲':' ▼'):'');
+ });
 }
-function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;render();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Las sumas incluyen solo los valores disponibles.');}
+
+function apply(){
+ options();
+
+ const filtered=rows.filter(r=>matches(r));
+
+ groups=aggregate(filtered);
+ page=0;
+ render();
+
+ if(ready){
+  status(
+   filtered.length.toLocaleString('es-UY')+' registros. '+
+   'Sin metros cúbicos: '+
+   filtered.filter(r=>r.sin_mcs).length+
+   '. Sin importe flete: '+
+   filtered.filter(r=>r.sin_importe).length+
+   '. Las sumas incluyen solo los valores disponibles.'
+  );
+ }
+}
+
 async function load(){
- $('refresh').disabled=true;status('Cargando datos de Dropbox…');
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
+ $('refresh').disabled=true;
+ status('Cargando datos de Dropbox…');
+
+ const controller=new AbortController();
+ const timer=setTimeout(
+  ()=>controller.abort(),120000
+ );
+
  try{
-  const response=await fetch(URL_JSON,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);
-  const data=await response.json();const source=Array.isArray(data)?data:data.datos;
-  if(!Array.isArray(source))throw Error('El JSON debe contener un arreglo llamado datos.');
-  const required=['fecharto','origen','deposito','nombreprod2',...sums];
+  const response=await fetch(URL_JSON,{
+   cache:'no-store',
+   signal:controller.signal
+  });
+
+  if(!response.ok){
+   throw Error('HTTP '+response.status);
+  }
+
+  const data=await response.json();
+  const source=Array.isArray(data)?data:data.datos;
+
+  if(!Array.isArray(source)){
+   throw Error(
+    'El JSON debe contener un arreglo llamado datos.'
+   );
+  }
+
+  const required=[
+   'fecharto',
+   'origen',
+   'nombrefas',
+   'deposito',
+   'nombreprod2',
+   ...sums
+  ];
+
   const parsed=source.map((r,i)=>{
-   if(!r||typeof r!=='object'||required.some(k=>!(k in r)))throw Error('Faltan columnas en el registro '+(i+1));
+   if(
+    !r||
+    typeof r!=='object'||
+    required.some(k=>!(k in r))
+   ){
+    throw Error(
+     'Faltan columnas en el registro '+(i+1)
+    );
+   }
+
    return normalize(r);
   });
-  rows=parsed;ready=true;$('updated').textContent='Actualización del archivo: '+(text(data.actualizado)||'No informada');apply();
- }catch(e){status((ready?'Se conservan los datos anteriores. ':'')+'No se pudo cargar el JSON. '+(e.name==='AbortError'?'Se agotó el tiempo de espera.':e.message)+' Verificá el enlace y que Dropbox permita la lectura desde esta página.',true);}
- finally{clearTimeout(timer);$('refresh').disabled=false;}
+
+  rows=parsed;
+  ready=true;
+
+  $('updated').textContent=
+   'Actualización del archivo: '+
+   (text(data.actualizado)||'No informada');
+
+  apply();
+
+ }catch(e){
+  status(
+   (ready?'Se conservan los datos anteriores. ':'')+
+   'No se pudo cargar el JSON. '+
+   (e.name==='AbortError'
+    ?'Se agotó el tiempo de espera.'
+    :e.message)+
+   ' Verificá el enlace y que Dropbox permita '+
+   'la lectura desde esta página.',
+   true
+  );
+
+ }finally{
+  clearTimeout(timer);
+  $('refresh').disabled=false;
+ }
 }
-columns.forEach((k,i)=>{const th=document.createElement('th'),button=document.createElement('button');button.textContent=labels[i];button.onclick=()=>{direction=sortKey===k?-direction:1;sortKey=k;render();};th.append(button);$('headers').append(th);});
-filters.forEach(k=>{$(k).append(new Option('Todos',''));$(k).onchange=apply;});
-$('clear').onclick=()=>{filters.forEach(k=>$(k).value='');apply();};$('refresh').onclick=load;
-$('prev').onclick=()=>{page--;render();};$('next').onclick=()=>{page++;render();};
-$('export').onclick=()=>{
- const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const csvRow=g=>columns.map(k=>quote(numericColumns.includes(k)||k==='densidad'?(g[k]==null?'':String(g[k]).replace('.',',')):g[k])).join(';');
- const csv=[labels.map(quote).join(';'),...groups.map(csvRow),csvRow({...totals(),origen:'TOTAL FILTRADO'})].join('\r\n');
- const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='LiquidacionMetrosCubicos.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+columns.forEach((k,i)=>{
+ const th=document.createElement('th');
+ const button=document.createElement('button');
+
+ button.textContent=labels[i];
+
+ button.onclick=()=>{
+  direction=sortKey===k?-direction:1;
+  sortKey=k;
+  render();
+ };
+
+ th.append(button);
+ $('headers').append(th);
+});
+
+filters.forEach(k=>{
+ $(k).append(new Option('Todos',''));
+ $(k).onchange=apply;
+});
+
+$('clear').onclick=()=>{
+ filters.forEach(k=>$(k).value='');
+ apply();
 };
-render();load();
+
+$('refresh').onclick=load;
+
+$('prev').onclick=()=>{
+ page--;
+ render();
+};
+
+$('next').onclick=()=>{
+ page++;
+ render();
+};
+
+$('export').onclick=()=>{
+ const quote=v=>
+  '"'+String(v??'').replace(/"/g,'""')+'"';
+
+ const csvRow=g=>columns.map(k=>{
+  const numeric=
+   numericColumns.includes(k)||k==='densidad';
+
+  const value=numeric
+   ?g[k]==null
+    ?''
+    :String(g[k]).replace('.',',')
+   :g[k];
+
+  return quote(value);
+ }).join(';');
+
+ const csv=[
+  labels.map(quote).join(';'),
+  ...groups.map(csvRow),
+  csvRow({
+   ...totals(),
+   origen:'TOTAL FILTRADO'
+  })
+ ].join('\r\n');
+
+ const url=URL.createObjectURL(
+  new Blob(['\uFEFF'+csv],{
+   type:'text/csv;charset=utf-8'
+  })
+ );
+
+ const a=document.createElement('a');
+ a.href=url;
+ a.download='LiquidacionMetrosCubicos.csv';
+ a.click();
+
+ setTimeout(
+  ()=>URL.revokeObjectURL(url),1000
+ );
+};
+
+render();
+load();
 </script>
 </body>
 </html>
