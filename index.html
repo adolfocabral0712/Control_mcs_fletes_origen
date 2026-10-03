@@ -18,7 +18,7 @@ button{cursor:pointer}
 button.primary{background:var(--verde);color:white}
 button:disabled{opacity:.5;cursor:default}
 .filters,.cards{display:grid;gap:12px;margin-bottom:18px}
-.filters{grid-template-columns:repeat(5,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}
+.filters{grid-template-columns:repeat(6,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}
 label{font-weight:bold;font-size:12px}
 select{display:block;width:100%;margin-top:7px}
 .cards{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -34,21 +34,21 @@ th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}
 th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}
 tbody tr:nth-child(even){background:#f6f9f7}
 tbody tr:hover{background:#eaf3ee}
-td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}
+td:first-child,td:nth-child(6){max-width:210px;overflow-wrap:anywhere}
 tfoot{font-weight:bold;background:#e4eee8}
 #status{margin:10px 0;line-height:1.5}
 #status.error{color:#ad2626}
 .pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}
 .note{font-size:12px;margin-top:14px;line-height:1.5}
+
 @media(max-width:800px){
  main{padding:12px}
  header{align-items:flex-start;flex-direction:column}
  .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
- .filters label:last-child{grid-column:1/-1}
  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
  h1{font-size:22px}
  .card strong{font-size:20px}
- table{min-width:1050px}
+ table{min-width:1100px}
  .toolbar{flex-wrap:wrap}
 }
 </style>
@@ -87,6 +87,10 @@ tfoot{font-weight:bold;background:#e4eee8}
  <label>
   Nombre FAS
   <select id="nombrefas"></select>
+ </label>
+ <label>
+  Depósito
+  <select id="deposito"></select>
  </label>
 </section>
 
@@ -140,6 +144,7 @@ tfoot{font-weight:bold;background:#e4eee8}
  Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000.
  Diferencia = neto flete − neto.
  Densidad = neto en toneladas / metros cúbicos.
+ Flete / MCS = importe flete / metros cúbicos.
  Si los metros cúbicos son cero, se muestra «—».
  Los totales incluyen todos los grupos filtrados.
 </p>
@@ -156,7 +161,8 @@ const filters = [
  'mes_liquidacion',
  'mes_nombre',
  'quincena',
- 'nombrefas'
+ 'nombrefas',
+ 'deposito'
 ];
 
 const dimensions = [
@@ -169,6 +175,10 @@ const dimensions = [
  'nombre_prod'
 ];
 
+const tableDimensions = dimensions.filter(
+ k=>k!=='mes_liquidacion'
+);
+
 const sums = [
  'neto',
  'neto_flete',
@@ -176,23 +186,24 @@ const sums = [
  'importe_flete'
 ];
 
-const numericColumns = [...sums,'diferencia'];
+const calculated = ['densidad','flete_mcs'];
+const numericColumns = [...sums,'diferencia',...calculated];
 
 const columns = [
- ...dimensions,
+ ...tableDimensions,
  'neto',
  'neto_flete',
  'diferencia',
  'metros_cubicos',
  'importe_flete',
- 'densidad'
+ 'densidad',
+ 'flete_mcs'
 ];
 
 const labels = [
  'Origen',
  'Depósito',
  'Año liquidación',
- 'Mes liquidación',
  'Nombre del mes',
  'Quincena',
  'Producto',
@@ -201,7 +212,8 @@ const labels = [
  'Diferencia (t)',
  'Metros cúbicos',
  'Importe flete',
- 'Densidad (t/m³)'
+ 'Densidad (t/m³)',
+ 'Flete / MCS'
 ];
 
 const months = [
@@ -209,7 +221,7 @@ const months = [
  'JULIO','AGOSTO','SETIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'
 ];
 
-const $ = id => document.getElementById(id);
+const $ = id=>document.getElementById(id);
 
 const fmt = new Intl.NumberFormat('es-UY',{
  minimumFractionDigits:2,
@@ -217,8 +229,8 @@ const fmt = new Intl.NumberFormat('es-UY',{
 });
 
 const densityFmt = new Intl.NumberFormat('es-UY',{
- minimumFractionDigits:4,
- maximumFractionDigits:4
+ minimumFractionDigits:3,
+ maximumFractionDigits:3
 });
 
 let rows=[];
@@ -298,8 +310,8 @@ function normalize(r){
  }
 
  // Neto de remitos2 ya está en toneladas.
- // Neto flete viene en kilogramos: se convierte a toneladas.
- p.neto_flete=p.neto_flete/1000;
+ // Solo neto flete se convierte de kg a toneladas.
+ p.neto_flete/=1000;
 
  p.sin_mcs=
   r.metros_cubicos==null||text(r.metros_cubicos)==='';
@@ -354,6 +366,19 @@ function options(){
  }
 }
 
+function calculate(g){
+ return {
+  ...g,
+  diferencia:g.neto_flete-g.neto,
+  densidad:g.metros_cubicos===0
+   ?null
+   :g.neto/g.metros_cubicos,
+  flete_mcs:g.metros_cubicos===0
+   ?null
+   :g.importe_flete/g.metros_cubicos
+ };
+}
+
 function aggregate(source){
  const map=new Map();
 
@@ -381,15 +406,7 @@ function aggregate(source){
   }
  }
 
- return [...map.values()].map(g=>({
-  ...g,
-  diferencia:g.neto_flete-g.neto,
-
-  // DENSIDAD = NETO EN TONELADAS / METROS CÚBICOS.
-  densidad:g.metros_cubicos===0
-   ?null
-   :g.neto/g.metros_cubicos
- }));
+ return [...map.values()].map(calculate);
 }
 
 function totals(){
@@ -406,19 +423,14 @@ function totals(){
   }
  }
 
- t.diferencia=t.neto_flete-t.neto;
-
- // Densidad total: relación entre las sumas.
- t.densidad=t.metros_cubicos===0
-  ?null
-  :t.neto/t.metros_cubicos;
-
- return t;
+ return calculate(t);
 }
 
 function display(k,v){
+ if(calculated.includes(k)&&v==null)return '—';
+
  if(k==='densidad'){
-  return v==null?'—':densityFmt.format(v);
+  return densityFmt.format(v);
  }
 
  if(numericColumns.includes(k)){
@@ -442,12 +454,8 @@ function render(){
 
   if(b[sortKey]==null)return -1;
 
-  const numeric=
-   numericColumns.includes(sortKey)||
-   sortKey==='densidad';
-
   return direction*(
-   numeric
+   numericColumns.includes(sortKey)
     ?a[sortKey]-b[sortKey]
     :compare(a[sortKey],b[sortKey])
   );
@@ -494,11 +502,11 @@ function render(){
  const totalRow=document.createElement('tr');
  const title=document.createElement('td');
 
- title.colSpan=dimensions.length;
+ title.colSpan=tableDimensions.length;
  title.textContent='TOTAL FILTRADO';
  totalRow.append(title);
 
- for(const k of columns.slice(dimensions.length)){
+ for(const k of columns.slice(tableDimensions.length)){
   cell(totalRow,display(k,t[k]));
  }
 
@@ -675,14 +683,18 @@ $('export').onclick=()=>{
   '"'+String(v??'').replace(/"/g,'""')+'"';
 
  const csvRow=g=>columns.map(k=>{
-  const numeric=
-   numericColumns.includes(k)||k==='densidad';
+  let value=g[k];
 
-  const value=numeric
-   ?g[k]==null
-    ?''
-    :String(g[k]).replace('.',',')
-   :g[k];
+  if(numericColumns.includes(k)){
+   if(value==null){
+    value='';
+   }else{
+    // Densidad: 3 decimales. Resto: 2 decimales.
+    value=Number(value)
+     .toFixed(k==='densidad'?3:2)
+     .replace('.',',');
+   }
+  }
 
   return quote(value);
  }).join(';');
