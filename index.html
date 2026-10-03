@@ -10,6 +10,7 @@
 .chart-panel{margin-top:20px}.chart-note{font-size:12px;margin-top:6px}.chart-scroll{overflow:auto;padding:12px}.chart-scroll svg{display:block;width:100%;min-width:900px}.chart-empty{text-align:center;padding:30px;color:#61746a}
 .chart-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:8px 12px}.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;overflow-wrap:anywhere}.legend-swatch{width:24px;height:4px;flex-shrink:0}@media(max-width:800px){.chart-legend{grid-template-columns:1fr}}
 .chart-stage{position:relative;min-width:900px}.chart-stage svg{cursor:crosshair}.month-tooltip{position:absolute;z-index:3;max-width:calc(100vw - 48px);background:white;border:1px solid #dce5e0;border-radius:12px;padding:14px;box-shadow:0 8px 28px #164b3c35}.month-tooltip[hidden]{display:none}.tooltip-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--verde);font-size:18px}.tooltip-head button{padding:0 6px;border:0;font-size:24px;background:white}.tooltip-note{font-size:11px;margin:4px 0 12px}.tooltip-scroll{max-height:280px;overflow:auto}.month-tooltip table{min-width:0;width:100%;font-size:12px}.month-tooltip th{background:#edf4ef;color:#21372d;padding:8px;white-space:nowrap}.month-tooltip td{padding:9px 6px;white-space:nowrap}.month-tooltip td:first-child{white-space:normal;max-width:none;text-align:left}.tooltip-product small{display:block;font-size:10px;color:#61746a;margin-top:4px;line-height:1.4}.tooltip-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.month-tooltip tbody tr:nth-child(even){background:#f7faf8}
+.accumulated-panel{margin-bottom:20px}
 </style>
 </head>
 <body>
@@ -23,6 +24,11 @@
 <div class="card"><span>Densidad · t / m³</span><strong id="densidad">—</strong></div>
 </section>
 <div id="status" role="status" aria-live="polite">Cargando datos…</div>
+<section class="panel accumulated-panel">
+ <div class="toolbar"><b id="acc-count">Acumulado de los meses seleccionados</b><button id="acc-export" disabled>Exportar acumulado CSV</button></div>
+ <div class="scroll"><table><thead><tr id="acc-headers"></tr></thead><tbody id="acc-body"></tbody><tfoot id="acc-footer"></tfoot></table></div>
+ <div class="pager"><button id="acc-prev">Anterior</button><span id="acc-page"></span><button id="acc-next">Siguiente</button></div>
+</section>
 <section class="panel">
 <div class="toolbar"><b id="count">Resumen por origen, depósito, período y producto</b><button id="export" disabled>Exportar CSV</button></div>
 <div class="scroll"><table><thead><tr id="headers"></tr></thead><tbody id="body"></tbody><tfoot id="footer"></tfoot></table></div>
@@ -175,7 +181,7 @@ function render(){
  const totalRow=document.createElement('tr');const title=document.createElement('td');title.colSpan=tableDimensions.length;title.textContent='TOTAL FILTRADO';totalRow.append(title);for(const k of columns.slice(tableDimensions.length))cell(totalRow,display(k,t[k]));$('footer').replaceChildren(totalRow);
  $('count').textContent=groups.length.toLocaleString('es-UY')+' grupos';
  const pages=Math.max(1,Math.ceil(groups.length/PAGE_SIZE));$('page').textContent=`Página ${page+1} de ${pages}`;$('prev').disabled=page===0;$('next').disabled=page+1>=pages;$('export').disabled=!groups.length;
- document.querySelectorAll('th').forEach((th,i)=>{th.setAttribute('aria-sort',columns[i]===sortKey?(direction===1?'ascending':'descending'):'none');th.firstChild.textContent=labels[i]+(columns[i]===sortKey?(direction===1?' ▲':' ▼'):'');});
+ document.querySelectorAll('#headers th').forEach((th,i)=>{th.setAttribute('aria-sort',columns[i]===sortKey?(direction===1?'ascending':'descending'):'none');th.firstChild.textContent=labels[i]+(columns[i]===sortKey?(direction===1?' ▲':' ▼'):'');});
 }
 function chartGroups(source){
  const keys=['origen','nombre_prod','anio_liquidacion','mes_liquidacion','mes_nombre','deposito'];
@@ -270,7 +276,33 @@ function renderChart(){
   const index=currentMonth==null?0:activeMonths.indexOf(currentMonth);const next=event.key==='ArrowRight'?Math.min(activeMonths.length-1,index+1):event.key==='ArrowLeft'?Math.max(0,index-1):index;showMonth(activeMonths[next]);
  });
 }
-function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;chartPage=0;render();renderChart();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Cotización de fecha cercana aplicada a '+filtered.filter(r=>r.usd_fecha_alternativa).length+' registros. Las sumas incluyen solo los valores disponibles.');}
+const accDimensions=['origen','deposito','anio_liquidacion','nombre_prod'];
+const accColumns=columns.filter(k=>k!=='mes_nombre');
+const accLabels=labels.filter((label,i)=>columns[i]!=='mes_nombre');
+let accGroups=[],accPage=0,accSort='origen',accDirection=1;
+function accumulated(source){
+ const map=new Map();
+ for(const row of source){
+  const key=JSON.stringify(accDimensions.map(k=>row[k]));
+  if(!map.has(key))map.set(key,{...Object.fromEntries(accDimensions.map(k=>[k,row[k]])),neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0,usd_sum:0,usd_count:0});
+  const g=map.get(key);for(const k of sums)g[k]+=row[k];if(row.usd_promedio!==null){g.usd_sum+=row.usd_promedio;g.usd_count++;}
+ }
+ return [...map.values()].map(g=>{
+  const usd=g.usd_count?g.usd_sum/g.usd_count:null;
+  return {...g,usd_promedio:usd,diferencia:g.neto_flete-g.neto,densidad:g.metros_cubicos===0?null:g.neto/g.metros_cubicos,flete_usd_mcs:g.metros_cubicos===0||!usd?null:g.importe_flete/usd/g.metros_cubicos};
+ });
+}
+function renderAccumulated(){
+ accGroups.sort((a,b)=>{if(a[accSort]==null)return b[accSort]==null?0:1;if(b[accSort]==null)return -1;return accDirection*(numericColumns.includes(accSort)||accSort==='densidad'?a[accSort]-b[accSort]:compare(a[accSort],b[accSort]));});
+ $('acc-body').replaceChildren();
+ for(const g of accGroups.slice(accPage*PAGE_SIZE,(accPage+1)*PAGE_SIZE)){const tr=document.createElement('tr');for(const k of accColumns)cell(tr,display(k,g[k]));$('acc-body').append(tr);}
+ if(!accGroups.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=accColumns.length;td.textContent=ready?'No hay registros para estos filtros.':'Esperando datos…';tr.append(td);$('acc-body').append(tr);}
+ const t=totals(),tr=document.createElement('tr'),title=document.createElement('td');title.colSpan=accDimensions.length;title.textContent='TOTAL ACUMULADO';tr.append(title);for(const k of accColumns.slice(accDimensions.length))cell(tr,display(k,t[k]));$('acc-footer').replaceChildren(tr);
+ $('acc-count').textContent='Acumulado de los meses seleccionados · '+accGroups.length+' grupos';
+ const pages=Math.max(1,Math.ceil(accGroups.length/PAGE_SIZE));$('acc-page').textContent='Página '+(accPage+1)+' de '+pages;$('acc-prev').disabled=accPage===0;$('acc-next').disabled=accPage+1>=pages;$('acc-export').disabled=!accGroups.length;
+ document.querySelectorAll('#acc-headers th').forEach((th,i)=>{th.setAttribute('aria-sort',accColumns[i]===accSort?(accDirection===1?'ascending':'descending'):'none');th.firstChild.textContent=accLabels[i]+(accColumns[i]===accSort?(accDirection===1?' ▲':' ▼'):'');});
+}
+function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);accGroups=accumulated(filtered);page=0;accPage=0;chartPage=0;render();renderAccumulated();renderChart();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Cotización de fecha cercana aplicada a '+filtered.filter(r=>r.usd_fecha_alternativa).length+' registros. Las sumas incluyen solo los valores disponibles.');}
 async function load(){
  $('refresh').disabled=true;status('Cargando datos de Dropbox…');
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
@@ -291,6 +323,15 @@ async function load(){
  finally{clearTimeout(timer);$('refresh').disabled=false;}
 }
 columns.forEach((k,i)=>{const th=document.createElement('th'),button=document.createElement('button');button.textContent=labels[i];button.onclick=()=>{direction=sortKey===k?-direction:1;sortKey=k;render();};th.append(button);$('headers').append(th);});
+accColumns.forEach((k,i)=>{const th=document.createElement('th'),button=document.createElement('button');button.textContent=accLabels[i];button.onclick=()=>{accDirection=accSort===k?-accDirection:1;accSort=k;renderAccumulated();};th.append(button);$('acc-headers').append(th);});
+$('acc-prev').onclick=()=>{accPage--;renderAccumulated();};
+$('acc-next').onclick=()=>{accPage++;renderAccumulated();};
+$('acc-export').onclick=()=>{
+ const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const line=g=>accColumns.map(k=>quote(numericColumns.includes(k)||k==='densidad'?(g[k]==null?'':Number(g[k]).toFixed(k==='densidad'?3:2).replace('.',',')):g[k])).join(';');
+ const csv=[accLabels.map(quote).join(';'),...accGroups.map(line),line({...totals(),origen:'TOTAL ACUMULADO'})].join('\r\n');
+ const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='AcumuladoFletesMCS.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 buildFilters();
 $('clear').onclick=()=>{filters.forEach(k=>selections[k]=null);apply();};$('refresh').onclick=load;
 $('prev').onclick=()=>{page--;render();};$('next').onclick=()=>{page++;render();};
@@ -302,7 +343,7 @@ $('export').onclick=()=>{
 };
 $('chart-prev').onclick=()=>{chartPage--;renderChart();};
 $('chart-next').onclick=()=>{chartPage++;renderChart();};
-render();renderChart();load();
+render();renderAccumulated();renderChart();load();
 </script>
 </body>
 </html>
