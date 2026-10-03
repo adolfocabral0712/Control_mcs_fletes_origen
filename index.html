@@ -29,8 +29,8 @@
 <div class="pager"><button id="prev">Anterior</button><span id="page"></span><button id="next">Siguiente</button></div>
 </section>
 <section class="panel chart-panel">
- <div class="toolbar"><div><b>Flete / MCS por origen y producto</b><p class="chart-note">Pasá el mouse o tocá un mes para comparar todos los productos · Flete/MCS y densidad</p></div><span id="chart-count"></span></div>
- <div class="chart-scroll" id="chart" role="img" aria-label="Gráfico de líneas de Flete por metro cúbico"></div>
+ <div class="toolbar"><div><b>Flete USD / Mcs por origen y producto</b><p class="chart-note">Pasá el mouse o tocá un mes para comparar todos los productos · Flete USD/Mcs y densidad</p></div><span id="chart-count"></span></div>
+ <div class="chart-scroll" id="chart" role="img" aria-label="Gráfico de líneas de Flete USD por metro cúbico"></div>
  <div class="pager"><button id="chart-prev">Anterior</button><span id="chart-page"></span><button id="chart-next">Siguiente</button></div>
 </section>
 <p class="note">Año y mes tomados directamente de ano y mes del JSON. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Cotización USD: (compra + venta) / 2 por fecharto; sin dato exacto se usa la fecha más cercana, priorizando la anterior en un empate. La columna muestra el promedio de cotizaciones aplicadas a los registros del grupo. Cotizaciones leídas desde Dropbox al cargar o actualizar la página. Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
@@ -182,10 +182,10 @@ function chartGroups(source){
  const map=new Map();
  for(const row of source){
   const key=JSON.stringify(keys.map(k=>row[k]));
-  if(!map.has(key))map.set(key,{...Object.fromEntries(keys.map(k=>[k,row[k]])),importe:0,mcs:0,neto:0});
-  const group=map.get(key);group.importe+=row.importe_flete;group.mcs+=row.metros_cubicos;group.neto+=row.neto;
+  if(!map.has(key))map.set(key,{...Object.fromEntries(keys.map(k=>[k,row[k]])),importe:0,mcs:0,neto:0,usd_sum:0,usd_count:0});
+  const group=map.get(key);group.importe+=row.importe_flete;group.mcs+=row.metros_cubicos;group.neto+=row.neto;if(row.usd_promedio!==null){group.usd_sum+=row.usd_promedio;group.usd_count++;}
  }
- return [...map.values()].map(g=>({...g,value:g.mcs===0?null:g.importe/g.mcs,density:g.mcs===0?null:g.neto/g.mcs}));
+ return [...map.values()].map(g=>({...g,value:g.mcs===0||!g.usd_count||g.usd_sum===0?null:g.importe/(g.usd_sum/g.usd_count)/g.mcs,density:g.mcs===0?null:g.neto/g.mcs}));
 }
 function renderChart(){
  const data=chartGroups(rows.filter(r=>matches(r)));
@@ -213,7 +213,7 @@ function renderChart(){
  function el(type,attrs,label){const n=document.createElementNS(ns,type);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(label!=null)n.textContent=label;svg.append(n);return n;}
  for(let i=0;i<=5;i++){const value=min+(upper-min)*i/5,py=y(value);el('line',{x1:left,x2:right,y1:py,y2:py,stroke:'#e1e9e4'});el('text',{x:left-10,y:py+4,'text-anchor':'end',fill:'#61746a','font-size':12},fmt.format(value));}
  activeMonths.forEach(m=>{el('text',{x:x(m),y:bottom+25,'text-anchor':'middle',fill:'#61746a','font-size':12},months[m].slice(0,3));});
- el('text',{x:left,y:18,fill:'#21372d','font-size':13},'Flete / MCS');
+ el('text',{x:left,y:18,fill:'#21372d','font-size':13},'Flete USD / Mcs');
  el('line',{x1:left,x2:right,y1:y(0),y2:y(0),stroke:'#91a79b'});
  const palette=['#164b3c','#277da8','#d48b22','#8c5bb3','#bb4857','#468840','#357c7b','#9b6728','#5564b1','#bd6e32','#804c64','#5797ad','#77783b','#7b57aa','#31692b'];
  const legend=document.createElement('div');legend.className='chart-legend';
@@ -229,7 +229,7 @@ function renderChart(){
    if(v==null)continue;
    const dot=el('circle',{cx:x(m),cy:y(v),r:4.5,fill:color});
    const title=document.createElementNS(ns,'title');
-   title.textContent=s.label+' · '+months[m]+' · Flete/MCS: '+fmt.format(v)+' · Densidad: '+densityFmt.format(s.densities.get(m));dot.append(title);
+   title.textContent=s.label+' · '+months[m]+' · Flete USD/Mcs: '+fmt.format(v)+' · Densidad: '+densityFmt.format(s.densities.get(m));dot.append(title);
   }
   const item=document.createElement('div');item.className='legend-item';const swatch=document.createElement('span');swatch.className='legend-swatch';swatch.style.background=color;const label=document.createElement('span');label.textContent=s.label;item.append(swatch,label);legend.append(item);
  });
@@ -245,7 +245,7 @@ function renderChart(){
   const close=document.createElement('button');close.textContent='×';close.setAttribute('aria-label','Cerrar detalle del mes');close.onclick=()=>{pinned=false;popup.hidden=true;indicator.setAttribute('visibility','hidden');};head.append(title,close);
   const note=document.createElement('p');note.className='tooltip-note';note.textContent='Todos los productos con datos de este mes, según los filtros.';
   const scroll=document.createElement('div');scroll.className='tooltip-scroll';
-  const table=document.createElement('table');const header=document.createElement('tr');for(const label of ['Producto / origen','Flete/MCS','Densidad']){const th=document.createElement('th');th.textContent=label;header.append(th);}const thead=document.createElement('thead');thead.append(header);table.append(thead);
+  const table=document.createElement('table');const header=document.createElement('tr');for(const label of ['Producto / origen','Flete USD/Mcs','Densidad']){const th=document.createElement('th');th.textContent=label;header.append(th);}const thead=document.createElement('thead');thead.append(header);table.append(thead);
   const tbody=document.createElement('tbody');
   series.forEach((s,index)=>{
    const value=s.points.get(month);if(value==null)return;
