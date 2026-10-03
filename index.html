@@ -11,6 +11,7 @@
 .chart-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:8px 12px}.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;overflow-wrap:anywhere}.legend-swatch{width:24px;height:4px;flex-shrink:0}@media(max-width:800px){.chart-legend{grid-template-columns:1fr}}
 .chart-stage{position:relative;min-width:900px}.chart-stage svg{cursor:crosshair}.month-tooltip{position:absolute;z-index:3;max-width:calc(100vw - 48px);background:white;border:1px solid #dce5e0;border-radius:12px;padding:14px;box-shadow:0 8px 28px #164b3c35}.month-tooltip[hidden]{display:none}.tooltip-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--verde);font-size:18px}.tooltip-head button{padding:0 6px;border:0;font-size:24px;background:white}.tooltip-note{font-size:11px;margin:4px 0 12px}.tooltip-scroll{max-height:280px;overflow:auto}.month-tooltip table{min-width:0;width:100%;font-size:12px}.month-tooltip th{background:#edf4ef;color:#21372d;padding:8px;white-space:nowrap}.month-tooltip td{padding:9px 6px;white-space:nowrap}.month-tooltip td:first-child{white-space:normal;max-width:none;text-align:left}.tooltip-product small{display:block;font-size:10px;color:#61746a;margin-top:4px;line-height:1.4}.tooltip-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.month-tooltip tbody tr:nth-child(even){background:#f7faf8}
 .accumulated-panel{margin-bottom:20px}
+.filter-search{display:block;width:100%;padding:10px;border:1px solid var(--borde);border-radius:7px;margin-bottom:9px;font:inherit;color:#21372d;background:#f7faf8}.filter-search:focus{outline:2px solid #8fb7a5;outline-offset:1px}.choice[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -123,6 +124,9 @@ function status(message,error=false){$('status').textContent=message;$('status')
 const filterLabels={anio_liquidacion:'Año',mes_nombre:'Nombre del mes',quincena:'Quincena',nombrefas:'Nombre FAS',deposito:'Depósito'};
 // null = todas; Set vacío = ninguna.
 const selections=Object.fromEntries(filters.map(k=>[k,null]));
+const filterSearch=Object.fromEntries(filters.map(k=>[k,'']));
+function searchText(value){return text(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');}
+function searchOptions(k){const query=searchText(filterSearch[k]);document.querySelectorAll('#options_'+k+' .choice').forEach(label=>{label.hidden=!searchText(label.textContent).includes(query);});}
 function matches(row,except){return filters.every(k=>k===except||selections[k]===null||selections[k].has(row[k]));}
 function options(){
  for(const k of filters){
@@ -144,6 +148,7 @@ function options(){
   }
   const selected=selections[k]===null?values.length:selections[k].size;
   $('summary_'+k).textContent=filterLabels[k]+': '+(selections[k]===null?'Todos':selected===0?'Ninguno':selected+' seleccionados');
+  searchOptions(k);
  }
 }
 function buildFilters(){
@@ -155,7 +160,8 @@ function buildFilters(){
   const all=document.createElement('button');all.textContent='Marcar todas';all.onclick=()=>{selections[k]=null;apply();};
   const none=document.createElement('button');none.textContent='Quitar todas';none.onclick=()=>{selections[k]=new Set();apply();};
   const container=document.createElement('div');container.id='options_'+k;container.className='choices';
-  actions.append(all,none);popup.append(actions,container);details.append(summary,popup);$('filters').append(details);
+  const search=document.createElement('input');search.type='search';search.className='filter-search';search.id='search_'+k;search.placeholder='Buscar coincidencias…';search.setAttribute('aria-label','Buscar en '+filterLabels[k]);search.oninput=()=>{filterSearch[k]=search.value;searchOptions(k);};
+  actions.append(all,none);popup.append(search,actions,container);details.append(summary,popup);$('filters').append(details);
  }
  document.addEventListener('click',event=>{document.querySelectorAll('.multi[open]').forEach(d=>{if(!d.contains(event.target))d.open=false;});});
  document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.multi[open]').forEach(d=>d.open=false);});
@@ -333,7 +339,7 @@ $('acc-export').onclick=()=>{
  const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='AcumuladoFletesMCS.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 buildFilters();
-$('clear').onclick=()=>{filters.forEach(k=>selections[k]=null);apply();};$('refresh').onclick=load;
+$('clear').onclick=()=>{filters.forEach(k=>{selections[k]=null;filterSearch[k]='';$('search_'+k).value='';});apply();};$('refresh').onclick=load;
 $('prev').onclick=()=>{page--;render();};$('next').onclick=()=>{page++;render();};
 $('export').onclick=()=>{
  const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
