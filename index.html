@@ -68,8 +68,8 @@ const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_
 const sums=['neto','neto_flete','metros_cubicos','importe_flete'];
 const numericColumns=[...sums,'diferencia','usd_promedio','flete_usd_mcs'];
 const tableDimensions=dimensions.filter(k=>k!=='mes_liquidacion');
-const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs','usd_promedio','flete_usd_mcs'];
-const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete $ / Mcs','Cotización USD promedio','Flete USD / Mcs'];
+const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','usd_promedio','flete_usd_mcs'];
+const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Cotización USD promedio','Flete USD / Mcs'];
 const $=id=>document.getElementById(id);
 const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:3,maximumFractionDigits:3});
