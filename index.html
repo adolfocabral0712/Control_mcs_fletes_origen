@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación · Volúmenes</title>
 <style>
-:root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}main{max-width:1600px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}h1{font-size:25px;margin:0 0 8px}p{margin:0;color:#61746a}button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}button{cursor:pointer}button.primary{background:var(--verde);color:white}button:disabled{opacity:.5;cursor:wait}.filters,.cards{display:grid;gap:12px;margin-bottom:18px}.filters{grid-template-columns:repeat(5,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}label{font-weight:bold;font-size:12px}select{display:block;width:100%;margin-top:7px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}.card span{color:#61746a;font-size:12px}.card strong{display:block;font-size:23px;margin-top:7px}.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}.scroll{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}tbody tr:nth-child(even){background:#f6f9f7}tbody tr:hover{background:#eaf3ee}td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}tfoot{font-weight:bold;background:#e4eee8}#status{margin:10px 0;line-height:1.5}#status.error{color:#ad2626}.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}.note{font-size:12px;margin-top:14px;line-height:1.5}@media(max-width:800px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters label:last-child{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}.card strong{font-size:20px}table{min-width:1050px}.toolbar{flex-wrap:wrap}}
+:root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}main{max-width:1600px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}h1{font-size:25px;margin:0 0 8px}p{margin:0;color:#61746a}button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}button{cursor:pointer}button.primary{background:var(--verde);color:white}button:disabled{opacity:.5;cursor:wait}.filters,.cards{display:grid;gap:12px;margin-bottom:18px}.filters{grid-template-columns:repeat(4,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}label{font-weight:bold;font-size:12px}select{display:block;width:100%;margin-top:7px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}.card span{color:#61746a;font-size:12px}.card strong{display:block;font-size:23px;margin-top:7px}.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}.scroll{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}tbody tr:nth-child(even){background:#f6f9f7}tbody tr:hover{background:#eaf3ee}td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}tfoot{font-weight:bold;background:#e4eee8}#status{margin:10px 0;line-height:1.5}#status.error{color:#ad2626}.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}.note{font-size:12px;margin-top:14px;line-height:1.5}@media(max-width:800px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters label:last-child{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}.card strong{font-size:20px}table{min-width:1050px}.toolbar{flex-wrap:wrap}}
 .filters{position:relative;align-items:start}.multi{position:relative;min-width:0}.multi summary{padding:12px;border:1px solid var(--borde);border-radius:7px;background:white;cursor:pointer;font-weight:bold;line-height:1.4;font-size:12px;overflow-wrap:anywhere}.multi[open]{z-index:10}.filter-popup{position:absolute;top:calc(100% + 6px);left:0;width:max(100%,260px);max-width:calc(100vw - 40px);background:white;border:1px solid var(--borde);border-radius:10px;padding:10px;box-shadow:0 10px 30px #164b3c25}.filter-actions{display:flex;gap:6px;margin-bottom:8px}.filter-actions button{font-size:11px;padding:7px;flex:1}.choices{max-height:280px;overflow:auto}.choice{display:flex;gap:9px;align-items:center;padding:9px 5px;font-size:12px;cursor:pointer;font-weight:normal;border-radius:5px}.choice:hover{background:#edf4ef}.choice input{margin:0;width:17px;height:17px;flex-shrink:0;accent-color:var(--verde)}.choice span{overflow-wrap:anywhere}.choice.unavailable{color:#829087}@media(max-width:800px){.multi:nth-child(even) .filter-popup{left:auto;right:0}.filters label:last-child{grid-column:auto}}
 .chart-panel{margin-top:20px}.chart-note{font-size:12px;margin-top:6px}.chart-scroll{overflow:auto;padding:12px}.chart-scroll svg{display:block;width:100%;min-width:900px}.chart-empty{text-align:center;padding:30px;color:#61746a}
 </style>
@@ -31,18 +31,18 @@
  <div class="chart-scroll" id="chart" role="img" aria-label="Gráfico de Flete por metro cúbico"></div>
  <div class="pager"><button id="chart-prev">Anterior</button><span id="chart-page"></span><button id="chart-next">Siguiente</button></div>
 </section>
-<p class="note">Período desde fecharto: mes 26–25; quincena 1: 26–10; quincena 2: 11–25. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
+<p class="note">Año y mes tomados directamente de ano y mes del JSON. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
 </main>
 <script>
 'use strict';
 const URL_JSON='https://dl.dropbox.com/scl/fi/s9gpzuap6rh2neq5dk7ni/RemitoLiquidacionMetrosCubicos.json?rlkey=ckfcmwxb33vtrui75myvhro7b&dl=1';
-const filters=['anio_liquidacion','mes_nombre','quincena','nombrefas','deposito'];
-const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_nombre','quincena','nombre_prod'];
+const filters=['anio_liquidacion','mes_nombre','nombrefas','deposito'];
+const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_nombre','nombre_prod'];
 const sums=['neto','neto_flete','metros_cubicos','importe_flete'];
 const numericColumns=[...sums,'diferencia'];
 const tableDimensions=dimensions.filter(k=>k!=='mes_liquidacion');
 const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs'];
-const labels=['Origen','Depósito','Año liquidación','Nombre del mes','Quincena','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete / MCS'];
+const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete / MCS'];
 const $=id=>document.getElementById(id);
 const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:3,maximumFractionDigits:3});
@@ -59,16 +59,21 @@ function number(value){
  const n=Number(s);if(!Number.isFinite(n))throw Error('Valor numérico inválido: '+value);return n;
 }
 const months=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SETIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+function monthOrder(value){const v=text(value).toLocaleUpperCase('es');return months.indexOf(v==='SEPTIEMBRE'?'SETIEMBRE':v);}
 function normalize(r){
  const m=text(r.fecharto).match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/);
  if(!m)throw Error('Fecha inválida: '+r.fecharto);
  const year=Number(m[1]),month=Number(m[2]),day=Number(m[3]);
  const date=new Date(Date.UTC(year,month-1,day));
  if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)throw Error('Fecha inválida: '+r.fecharto);
- const period=new Date(Date.UTC(year,month-1+(day>=26?1:0),1));
+ const rawMonth=text(r.mes);
+ const monthName=rawMonth.toLocaleUpperCase('es');
+ const monthIndex=months.indexOf(monthName==='SEPTIEMBRE'?'SETIEMBRE':monthName);
+ if(monthIndex<0)throw Error('Mes del JSON no reconocido: '+r.mes);
+ const rawYear=text(r.ano);
+ if(!/^\d{4}$/.test(rawYear))throw Error('Año del JSON no válido: '+r.ano);
  const p={nombrefas:text(r.nombrefas),origen:text(r.origen),deposito:text(r.deposito),nombre_prod:text(r.nombreprod2),
- anio_liquidacion:String(period.getUTCFullYear()),mes_liquidacion:String(period.getUTCMonth()+1),
- mes_nombre:months[period.getUTCMonth()],quincena:day>=26||day<=10?'1':'2'};
+ anio_liquidacion:rawYear,mes_liquidacion:String(monthIndex+1),mes_nombre:rawMonth};
  for(const k of sums)p[k]=number(r[k]);
  // Neto de remitos2 ya está en toneladas. Neto flete viene en kg.
  p.neto_flete/=1000;
@@ -78,13 +83,13 @@ function normalize(r){
 }
 function compare(a,b){return String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'});}
 function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
-const filterLabels={anio_liquidacion:'Año liquidación',mes_nombre:'Nombre del mes',quincena:'Quincena',nombrefas:'Nombre FAS',deposito:'Depósito'};
+const filterLabels={anio_liquidacion:'Año',mes_nombre:'Nombre del mes',quincena:'Quincena',nombrefas:'Nombre FAS',deposito:'Depósito'};
 // null = todas; Set vacío = ninguna.
 const selections=Object.fromEntries(filters.map(k=>[k,null]));
 function matches(row,except){return filters.every(k=>k===except||selections[k]===null||selections[k].has(row[k]));}
 function options(){
  for(const k of filters){
-  const container=$('options_'+k),values=[...new Set(rows.map(r=>r[k]))].sort(k==='mes_nombre'?(a,b)=>months.indexOf(a)-months.indexOf(b):compare);
+  const container=$('options_'+k),values=[...new Set(rows.map(r=>r[k]))].sort(k==='mes_nombre'?(a,b)=>monthOrder(a)-monthOrder(b):compare);
   const available=new Set(rows.filter(r=>matches(r,k)).map(r=>r[k]));
   container.replaceChildren();
   for(const value of values){
@@ -189,7 +194,7 @@ async function load(){
   const response=await fetch(URL_JSON,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);
   const data=await response.json();const source=Array.isArray(data)?data:data.datos;
   if(!Array.isArray(source))throw Error('El JSON debe contener un arreglo llamado datos.');
-  const required=['fecharto','origen','nombrefas','deposito','nombreprod2',...sums];
+  const required=['fecharto','ano','mes','origen','nombrefas','deposito','nombreprod2',...sums];
   const parsed=source.map((r,i)=>{
    if(!r||typeof r!=='object'||required.some(k=>!(k in r)))throw Error('Faltan columnas en el registro '+(i+1));
    return normalize(r);
