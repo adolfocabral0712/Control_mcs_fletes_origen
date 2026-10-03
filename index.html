@@ -33,18 +33,43 @@
  <div class="chart-scroll" id="chart" role="img" aria-label="Gráfico de líneas de Flete por metro cúbico"></div>
  <div class="pager"><button id="chart-prev">Anterior</button><span id="chart-page"></span><button id="chart-next">Siguiente</button></div>
 </section>
-<p class="note">Año y mes tomados directamente de ano y mes del JSON. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
+<p class="note">Año y mes tomados directamente de ano y mes del JSON. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Cotización USD: (compra + venta) / 2 por fecharto; sin dato exacto se usa la fecha más cercana, priorizando la anterior en un empate. La columna muestra el promedio de cotizaciones aplicadas a los registros del grupo. Cotizaciones leídas desde Dropbox al cargar o actualizar la página. Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
 </main>
 <script>
 'use strict';
 const URL_JSON='https://dl.dropbox.com/scl/fi/s9gpzuap6rh2neq5dk7ni/RemitoLiquidacionMetrosCubicos.json?rlkey=ckfcmwxb33vtrui75myvhro7b&dl=1';
+const URL_USD='https://dl.dropbox.com/scl/fi/jkpsnzusujqmnaaax4dpj/CotizacionesUSD.json?rlkey=09r94260nsh8xdczs1fj2oshk&dl=1';
+let usdQuotes=[];
+function parseUsd(data){
+ const source=Array.isArray(data)?data:data.datos;
+ if(!Array.isArray(source))throw Error('El JSON de cotizaciones no contiene datos.');
+ const result=[];
+ for(const row of source){
+  if(row['Dólar.USA.Compra']==null||row['Dólar.USA.Venta']==null)continue;
+  const purchase=number(row['Dólar.USA.Compra']),sale=number(row['Dólar.USA.Venta']);
+  const date=text(row.Fecha).slice(0,10),time=Date.parse(date+'T00:00:00Z');
+  if(purchase>0&&sale>0&&Number.isFinite(time))result.push({date,time,average:(purchase+sale)/2});
+ }
+ if(!result.length)throw Error('No hay cotizaciones USD válidas.');
+ return result.sort((a,b)=>a.time-b.time);
+}
+const usdCache=new Map();
+function usdForDate(date){
+ if(usdCache.has(date))return usdCache.get(date);
+ const time=Date.parse(date+'T00:00:00Z');if(!Number.isFinite(time)||!usdQuotes.length)return null;
+ let low=0,high=usdQuotes.length;
+ while(low<high){const mid=(low+high)>>1;if(usdQuotes[mid].time<time)low=mid+1;else high=mid;}
+ const next=usdQuotes[low],previous=usdQuotes[low-1];
+ const chosen=!previous?next:!next?previous:time-previous.time<=next.time-time?previous:next;
+ usdCache.set(date,chosen);return chosen;
+}
 const filters=['anio_liquidacion','mes_nombre','nombrefas','deposito'];
 const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_nombre','nombre_prod'];
 const sums=['neto','neto_flete','metros_cubicos','importe_flete'];
-const numericColumns=[...sums,'diferencia'];
+const numericColumns=[...sums,'diferencia','usd_promedio'];
 const tableDimensions=dimensions.filter(k=>k!=='mes_liquidacion');
-const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs'];
-const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete / MCS'];
+const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs','usd_promedio'];
+const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete / MCS','Cotización USD promedio'];
 const $=id=>document.getElementById(id);
 const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:3,maximumFractionDigits:3});
@@ -79,6 +104,10 @@ function normalize(r){
  for(const k of sums)p[k]=number(r[k]);
  // Neto de remitos2 ya está en toneladas. Neto flete viene en kg.
  p.neto_flete/=1000;
+ const quote=usdForDate(m[1]+'-'+m[2]+'-'+m[3]);
+ p.usd_promedio=quote?quote.average:null;
+ p.usd_fecha=quote?quote.date:null;
+ p.usd_fecha_alternativa=quote?quote.date!==m[1]+'-'+m[2]+'-'+m[3]:false;
  p.sin_mcs=r.metros_cubicos==null||text(r.metros_cubicos)==='';
  p.sin_importe=r.importe_flete==null||text(r.importe_flete)==='';
  return p;
@@ -129,13 +158,13 @@ function aggregate(source){
  const map=new Map();
  for(const row of source){
   const key=JSON.stringify(dimensions.map(k=>row[k]));
-  if(!map.has(key))map.set(key,{...Object.fromEntries(dimensions.map(k=>[k,row[k]])),neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0});
-  const group=map.get(key);for(const k of sums)group[k]+=row[k];
+  if(!map.has(key))map.set(key,{...Object.fromEntries(dimensions.map(k=>[k,row[k]])),neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0,usd_sum:0,usd_count:0});
+  const group=map.get(key);for(const k of sums)group[k]+=row[k];if(row.usd_promedio!==null){group.usd_sum+=row.usd_promedio;group.usd_count++;}
  }
- return [...map.values()].map(g=>({...g,diferencia:g.neto_flete-g.neto,densidad:g.metros_cubicos===0?null:g.neto/g.metros_cubicos,flete_mcs:g.metros_cubicos===0?null:g.importe_flete/g.metros_cubicos}));
+ return [...map.values()].map(g=>({...g,usd_promedio:g.usd_count?g.usd_sum/g.usd_count:null,diferencia:g.neto_flete-g.neto,densidad:g.metros_cubicos===0?null:g.neto/g.metros_cubicos,flete_mcs:g.metros_cubicos===0?null:g.importe_flete/g.metros_cubicos}));
 }
-function totals(){const t={neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0};for(const g of groups)for(const k of sums)t[k]+=g[k];t.diferencia=t.neto_flete-t.neto;t.densidad=t.metros_cubicos===0?null:t.neto/t.metros_cubicos;t.flete_mcs=t.metros_cubicos===0?null:t.importe_flete/t.metros_cubicos;return t;}
-function display(k,v){if(k==='flete_mcs')return v==null?'—':fmt.format(v);return k==='densidad'?(v==null?'—':densityFmt.format(v)):numericColumns.includes(k)?fmt.format(v):v||'—';}
+function totals(){const t={neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0,usd_sum:0,usd_count:0};for(const g of groups){for(const k of sums)t[k]+=g[k];t.usd_sum+=g.usd_sum;t.usd_count+=g.usd_count;}t.usd_promedio=t.usd_count?t.usd_sum/t.usd_count:null;t.diferencia=t.neto_flete-t.neto;t.densidad=t.metros_cubicos===0?null:t.neto/t.metros_cubicos;t.flete_mcs=t.metros_cubicos===0?null:t.importe_flete/t.metros_cubicos;return t;}
+function display(k,v){if(k==='usd_promedio'&&v==null)return '—';if(k==='flete_mcs')return v==null?'—':fmt.format(v);return k==='densidad'?(v==null?'—':densityFmt.format(v)):numericColumns.includes(k)?fmt.format(v):v||'—';}
 function cell(tr,value){const td=document.createElement('td');td.textContent=value;tr.append(td);}
 function render(){
  groups.sort((a,b)=>{if(a[sortKey]==null)return b[sortKey]==null?0:1;if(b[sortKey]==null)return -1;return direction*(numericColumns.includes(sortKey)||(sortKey==='densidad'||sortKey==='flete_mcs')?a[sortKey]-b[sortKey]:compare(a[sortKey],b[sortKey]));});
@@ -241,20 +270,23 @@ function renderChart(){
   const index=currentMonth==null?0:activeMonths.indexOf(currentMonth);const next=event.key==='ArrowRight'?Math.min(activeMonths.length-1,index+1):event.key==='ArrowLeft'?Math.max(0,index-1):index;showMonth(activeMonths[next]);
  });
 }
-function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;chartPage=0;render();renderChart();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Las sumas incluyen solo los valores disponibles.');}
+function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;chartPage=0;render();renderChart();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Cotización de fecha cercana aplicada a '+filtered.filter(r=>r.usd_fecha_alternativa).length+' registros. Las sumas incluyen solo los valores disponibles.');}
 async function load(){
  $('refresh').disabled=true;status('Cargando datos de Dropbox…');
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
  try{
-  const response=await fetch(URL_JSON,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);
-  const data=await response.json();const source=Array.isArray(data)?data:data.datos;
+  const [response,usdResponse]=await Promise.all([fetch(URL_JSON,{cache:'no-store',signal:controller.signal}),fetch(URL_USD,{cache:'no-store',signal:controller.signal})]);
+  if(!response.ok)throw Error('Remitos: HTTP '+response.status);if(!usdResponse.ok)throw Error('Cotizaciones: HTTP '+usdResponse.status);
+  const [data,usdData]=await Promise.all([response.json(),usdResponse.json()]);
+  usdQuotes=parseUsd(usdData);usdCache.clear();
+  const source=Array.isArray(data)?data:data.datos;
   if(!Array.isArray(source))throw Error('El JSON debe contener un arreglo llamado datos.');
   const required=['fecharto','ano','mes','origen','nombrefas','deposito','nombreprod2',...sums];
   const parsed=source.map((r,i)=>{
    if(!r||typeof r!=='object'||required.some(k=>!(k in r)))throw Error('Faltan columnas en el registro '+(i+1));
    return normalize(r);
   });
-  rows=parsed.filter(r=>text(r.origen).replace(/\s+/g,' ').toLocaleLowerCase('es')!=='sin origen');ready=true;$('updated').textContent='Actualización del archivo: '+(text(data.actualizado)||'No informada');apply();
+  rows=parsed.filter(r=>text(r.origen).replace(/\s+/g,' ').toLocaleLowerCase('es')!=='sin origen');ready=true;$('updated').textContent='Actualización del archivo: '+(text(data.actualizado)||'No informada')+' · Cotizaciones USD: '+(text(usdData.actualizado)||'No informada');apply();
  }catch(e){status((ready?'Se conservan los datos anteriores. ':'')+'No se pudo cargar el JSON. '+(e.name==='AbortError'?'Se agotó el tiempo de espera.':e.message)+' Verificá el enlace y que Dropbox permita la lectura desde esta página.',true);}
  finally{clearTimeout(timer);$('refresh').disabled=false;}
 }
