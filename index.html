@@ -7,6 +7,7 @@
 <style>
 :root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}main{max-width:1600px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}h1{font-size:25px;margin:0 0 8px}p{margin:0;color:#61746a}button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}button{cursor:pointer}button.primary{background:var(--verde);color:white}button:disabled{opacity:.5;cursor:wait}.filters,.cards{display:grid;gap:12px;margin-bottom:18px}.filters{grid-template-columns:repeat(5,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}label{font-weight:bold;font-size:12px}select{display:block;width:100%;margin-top:7px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}.card span{color:#61746a;font-size:12px}.card strong{display:block;font-size:23px;margin-top:7px}.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}.scroll{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}tbody tr:nth-child(even){background:#f6f9f7}tbody tr:hover{background:#eaf3ee}td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}tfoot{font-weight:bold;background:#e4eee8}#status{margin:10px 0;line-height:1.5}#status.error{color:#ad2626}.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}.note{font-size:12px;margin-top:14px;line-height:1.5}@media(max-width:800px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters label:last-child{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}.card strong{font-size:20px}table{min-width:1050px}.toolbar{flex-wrap:wrap}}
 .filters{position:relative;align-items:start}.multi{position:relative;min-width:0}.multi summary{padding:12px;border:1px solid var(--borde);border-radius:7px;background:white;cursor:pointer;font-weight:bold;line-height:1.4;font-size:12px;overflow-wrap:anywhere}.multi[open]{z-index:10}.filter-popup{position:absolute;top:calc(100% + 6px);left:0;width:max(100%,260px);max-width:calc(100vw - 40px);background:white;border:1px solid var(--borde);border-radius:10px;padding:10px;box-shadow:0 10px 30px #164b3c25}.filter-actions{display:flex;gap:6px;margin-bottom:8px}.filter-actions button{font-size:11px;padding:7px;flex:1}.choices{max-height:280px;overflow:auto}.choice{display:flex;gap:9px;align-items:center;padding:9px 5px;font-size:12px;cursor:pointer;font-weight:normal;border-radius:5px}.choice:hover{background:#edf4ef}.choice input{margin:0;width:17px;height:17px;flex-shrink:0;accent-color:var(--verde)}.choice span{overflow-wrap:anywhere}.choice.unavailable{color:#829087}@media(max-width:800px){.multi:nth-child(even) .filter-popup{left:auto;right:0}.filters label:last-child{grid-column:auto}}
+.chart-panel{margin-top:20px}.chart-note{font-size:12px;margin-top:6px}.chart-scroll{overflow:auto;padding:12px}.chart-scroll svg{display:block;width:100%;min-width:900px}.chart-empty{text-align:center;padding:30px;color:#61746a}
 </style>
 </head>
 <body>
@@ -25,6 +26,11 @@
 <div class="scroll"><table><thead><tr id="headers"></tr></thead><tbody id="body"></tbody><tfoot id="footer"></tfoot></table></div>
 <div class="pager"><button id="prev">Anterior</button><span id="page"></span><button id="next">Siguiente</button></div>
 </section>
+<section class="panel chart-panel">
+ <div class="toolbar"><div><b>Flete / MCS por origen y producto</b><p class="chart-note">Agrupado por año, mes y depósito · mismos filtros de la tabla</p></div><span id="chart-count"></span></div>
+ <div class="chart-scroll" id="chart" role="img" aria-label="Gráfico de Flete por metro cúbico"></div>
+ <div class="pager"><button id="chart-prev">Anterior</button><span id="chart-page"></span><button id="chart-next">Siguiente</button></div>
+</section>
 <p class="note">Período desde fecharto: mes 26–25; quincena 1: 26–10; quincena 2: 11–25. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
 </main>
 <script>
@@ -42,6 +48,7 @@ const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFraction
 const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:3,maximumFractionDigits:3});
 let rows=[],groups=[],page=0,sortKey='origen',direction=1,ready=false;
 const PAGE_SIZE=100;
+let chartPage=0;const CHART_PAGE_SIZE=15;
 function text(value){return value==null?'':String(value).trim();}
 function number(value){
  if(value==null||value==='')return 0;
@@ -77,7 +84,7 @@ const selections=Object.fromEntries(filters.map(k=>[k,null]));
 function matches(row,except){return filters.every(k=>k===except||selections[k]===null||selections[k].has(row[k]));}
 function options(){
  for(const k of filters){
-  const container=$('options_'+k),values=[...new Set(rows.map(r=>r[k]))].sort(compare);
+  const container=$('options_'+k),values=[...new Set(rows.map(r=>r[k]))].sort(k==='mes_nombre'?(a,b)=>months.indexOf(a)-months.indexOf(b):compare);
   const available=new Set(rows.filter(r=>matches(r,k)).map(r=>r[k]));
   container.replaceChildren();
   for(const value of values){
@@ -134,7 +141,47 @@ function render(){
  const pages=Math.max(1,Math.ceil(groups.length/PAGE_SIZE));$('page').textContent=`Página ${page+1} de ${pages}`;$('prev').disabled=page===0;$('next').disabled=page+1>=pages;$('export').disabled=!groups.length;
  document.querySelectorAll('th').forEach((th,i)=>{th.setAttribute('aria-sort',columns[i]===sortKey?(direction===1?'ascending':'descending'):'none');th.firstChild.textContent=labels[i]+(columns[i]===sortKey?(direction===1?' ▲':' ▼'):'');});
 }
-function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;render();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Las sumas incluyen solo los valores disponibles.');}
+function chartGroups(source){
+ const keys=['origen','nombre_prod','anio_liquidacion','mes_liquidacion','mes_nombre','deposito'];
+ const map=new Map();
+ for(const row of source){
+  const key=JSON.stringify(keys.map(k=>row[k]));
+  if(!map.has(key))map.set(key,{...Object.fromEntries(keys.map(k=>[k,row[k]])),importe:0,mcs:0});
+  const group=map.get(key);group.importe+=row.importe_flete;group.mcs+=row.metros_cubicos;
+ }
+ return [...map.values()].map(g=>({...g,value:g.mcs===0?null:g.importe/g.mcs}));
+}
+function renderChart(){
+ const all=chartGroups(rows.filter(r=>matches(r)));
+ const valid=all.filter(g=>g.value!==null).sort((a,b)=>b.value-a.value||compare(a.origen,b.origen));
+ const pages=Math.max(1,Math.ceil(valid.length/CHART_PAGE_SIZE));chartPage=Math.min(chartPage,pages-1);
+ $('chart-count').textContent=valid.length+' barras'+(all.length>valid.length?' · '+(all.length-valid.length)+' grupos sin MCS netos':'');
+ $('chart-page').textContent='Página '+(chartPage+1)+' de '+pages;$('chart-prev').disabled=chartPage===0;$('chart-next').disabled=chartPage+1>=pages;
+ const target=$('chart');target.replaceChildren();
+ if(!valid.length){const p=document.createElement('p');p.className='chart-empty';p.textContent='No hay grupos con metros cúbicos distintos de cero para estos filtros.';target.append(p);return;}
+ const items=valid.slice(chartPage*CHART_PAGE_SIZE,(chartPage+1)*CHART_PAGE_SIZE);
+ const ns='http://www.w3.org/2000/svg',width=1260,left=640,right=1160,top=40,rowHeight=62,height=top+items.length*rowHeight+30;
+ const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 '+width+' '+height);
+ function el(type,attrs,label){const node=document.createElementNS(ns,type);for(const [k,v] of Object.entries(attrs))node.setAttribute(k,v);if(label!=null)node.textContent=label;svg.append(node);return node;}
+ const min=Math.min(0,...valid.map(g=>g.value)),max=Math.max(0,...valid.map(g=>g.value));
+ const upper=min===max?max+1:max;
+ const x=v=>left+(v-min)/(upper-min)*(right-left),zero=x(0);
+ for(let i=0;i<=4;i++){const value=min+(upper-min)*i/4;const px=x(value);el('line',{x1:px,x2:px,y1:top-12,y2:height-24,stroke:'#e1e9e4'});el('text',{x:px,y:19,'text-anchor':'middle',fill:'#61746a','font-size':12},fmt.format(value));}
+ el('line',{x1:zero,x2:zero,y1:top-12,y2:height-24,stroke:'#9aafa2'});
+ items.forEach((g,i)=>{
+  const y=top+i*rowHeight;
+  const first=g.origen+' · '+g.nombre_prod;
+  const second=g.anio_liquidacion+' · '+g.mes_nombre+' · '+g.deposito;
+  const label=el('text',{x:12,y:y+17,fill:'#21372d','font-size':13},first.length>85?first.slice(0,82)+'…':first);
+  const title=document.createElementNS(ns,'title');title.textContent=first+' | '+second;label.append(title);
+  el('text',{x:12,y:y+36,fill:'#61746a','font-size':11},second.length>95?second.slice(0,92)+'…':second);
+  const end=x(g.value),bar=el('rect',{x:Math.min(zero,end),y:y+6,width:Math.abs(end-zero),height:30,rx:4,fill:g.value<0?'#b74949':'#24634d'});
+  const tooltip=document.createElementNS(ns,'title');tooltip.textContent=first+' | '+second+' | Flete / MCS: '+fmt.format(g.value)+' | Importe: '+fmt.format(g.importe)+' | MCS: '+fmt.format(g.mcs);bar.append(tooltip);
+  el('text',{x:width-12,y:y+27,'text-anchor':'end',fill:'#21372d','font-size':13,'font-weight':'bold'},fmt.format(g.value));
+ });
+ target.append(svg);
+}
+function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;chartPage=0;render();renderChart();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Las sumas incluyen solo los valores disponibles.');}
 async function load(){
  $('refresh').disabled=true;status('Cargando datos de Dropbox…');
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
@@ -147,7 +194,7 @@ async function load(){
    if(!r||typeof r!=='object'||required.some(k=>!(k in r)))throw Error('Faltan columnas en el registro '+(i+1));
    return normalize(r);
   });
-  rows=parsed;ready=true;$('updated').textContent='Actualización del archivo: '+(text(data.actualizado)||'No informada');apply();
+  rows=parsed.filter(r=>text(r.origen).replace(/\s+/g,' ').toLocaleLowerCase('es')!=='sin origen');ready=true;$('updated').textContent='Actualización del archivo: '+(text(data.actualizado)||'No informada');apply();
  }catch(e){status((ready?'Se conservan los datos anteriores. ':'')+'No se pudo cargar el JSON. '+(e.name==='AbortError'?'Se agotó el tiempo de espera.':e.message)+' Verificá el enlace y que Dropbox permita la lectura desde esta página.',true);}
  finally{clearTimeout(timer);$('refresh').disabled=false;}
 }
@@ -161,7 +208,9 @@ $('export').onclick=()=>{
  const csv=[labels.map(quote).join(';'),...groups.map(csvRow),csvRow({...totals(),origen:'TOTAL FILTRADO'})].join('\r\n');
  const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='LiquidacionMetrosCubicos.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
-render();load();
+$('chart-prev').onclick=()=>{chartPage--;renderChart();};
+$('chart-next').onclick=()=>{chartPage++;renderChart();};
+render();renderChart();load();
 </script>
 </body>
 </html>
