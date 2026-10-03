@@ -3,7 +3,251 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liquidación · Volúmenes</title><!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación · Volúmenes</title>
+<style>
+:root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}main{max-width:1600px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}h1{font-size:25px;margin:0 0 8px}p{margin:0;color:#61746a}button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}button{cursor:pointer}button.primary{background:var(--verde);color:white}button:disabled{opacity:.5;cursor:wait}.filters,.cards{display:grid;gap:12px;margin-bottom:18px}.filters{grid-template-columns:repeat(4,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}label{font-weight:bold;font-size:12px}select{display:block;width:100%;margin-top:7px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}.card span{color:#61746a;font-size:12px}.card strong{display:block;font-size:23px;margin-top:7px}.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}.scroll{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}tbody tr:nth-child(even){background:#f6f9f7}tbody tr:hover{background:#eaf3ee}td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}tfoot{font-weight:bold;background:#e4eee8}#status{margin:10px 0;line-height:1.5}#status.error{color:#ad2626}.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}.note{font-size:12px;margin-top:14px;line-height:1.5}@media(max-width:800px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters label:last-child{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}.card strong{font-size:20px}table{min-width:1050px}.toolbar{flex-wrap:wrap}}
+.filters{position:relative;align-items:start}.multi{position:relative;min-width:0}.multi summary{padding:12px;border:1px solid var(--borde);border-radius:7px;background:white;cursor:pointer;font-weight:bold;line-height:1.4;font-size:12px;overflow-wrap:anywhere}.multi[open]{z-index:10}.filter-popup{position:absolute;top:calc(100% + 6px);left:0;width:max(100%,260px);max-width:calc(100vw - 40px);background:white;border:1px solid var(--borde);border-radius:10px;padding:10px;box-shadow:0 10px 30px #164b3c25}.filter-actions{display:flex;gap:6px;margin-bottom:8px}.filter-actions button{font-size:11px;padding:7px;flex:1}.choices{max-height:280px;overflow:auto}.choice{display:flex;gap:9px;align-items:center;padding:9px 5px;font-size:12px;cursor:pointer;font-weight:normal;border-radius:5px}.choice:hover{background:#edf4ef}.choice input{margin:0;width:17px;height:17px;flex-shrink:0;accent-color:var(--verde)}.choice span{overflow-wrap:anywhere}.choice.unavailable{color:#829087}@media(max-width:800px){.multi:nth-child(even) .filter-popup{left:auto;right:0}.filters label:last-child{grid-column:auto}}
+.chart-panel{margin-top:20px}.chart-note{font-size:12px;margin-top:6px}.chart-scroll{overflow:auto;padding:12px}.chart-scroll svg{display:block;width:100%;min-width:900px}.chart-empty{text-align:center;padding:30px;color:#61746a}
+.chart-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:8px 12px}.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;overflow-wrap:anywhere}.legend-swatch{width:24px;height:4px;flex-shrink:0}@media(max-width:800px){.chart-legend{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Liquidación · Volúmenes</h1><p id="updated">Consulta de neto, neto flete y metros cúbicos</p></div><div><button id="clear">Limpiar filtros</button> <button class="primary" id="refresh">Actualizar</button></div></header>
+<section class="filters" id="filters" aria-label="Filtros"></section>
+<section class="cards">
+<div class="card"><span>Neto total · t</span><strong id="neto">—</strong></div>
+<div class="card"><span>Neto flete total · t</span><strong id="neto_flete">—</strong></div>
+<div class="card"><span>Metros cúbicos total</span><strong id="metros_cubicos">—</strong></div>
+<div class="card"><span>Densidad · t / m³</span><strong id="densidad">—</strong></div>
+</section>
+<div id="status" role="status" aria-live="polite">Cargando datos…</div>
+<section class="panel">
+<div class="toolbar"><b id="count">Resumen por origen, depósito, período y producto</b><button id="export" disabled>Exportar CSV</button></div>
+<div class="scroll"><table><thead><tr id="headers"></tr></thead><tbody id="body"></tbody><tfoot id="footer"></tfoot></table></div>
+<div class="pager"><button id="prev">Anterior</button><span id="page"></span><button id="next">Siguiente</button></div>
+</section>
+<section class="panel chart-panel">
+ <div class="toolbar"><div><b>Flete / MCS por origen y producto</b><p class="chart-note">Meses en el eje horizontal · una línea por origen, producto, año y depósito</p></div><span id="chart-count"></span></div>
+ <div class="chart-scroll" id="chart" role="img" aria-label="Gráfico de líneas de Flete por metro cúbico"></div>
+ <div class="pager"><button id="chart-prev">Anterior</button><span id="chart-page"></span><button id="chart-next">Siguiente</button></div>
+</section>
+<p class="note">Año y mes tomados directamente de ano y mes del JSON. Neto de remitos2 ya está en toneladas; neto flete se divide por 1.000. Diferencia = neto flete − neto. Densidad = neto en toneladas / metros cúbicos. Si los metros cúbicos son cero, se muestra «—». Los totales incluyen todos los grupos filtrados, aunque estén en otras páginas.</p>
+</main>
+<script>
+'use strict';
+const URL_JSON='https://dl.dropbox.com/scl/fi/s9gpzuap6rh2neq5dk7ni/RemitoLiquidacionMetrosCubicos.json?rlkey=ckfcmwxb33vtrui75myvhro7b&dl=1';
+const filters=['anio_liquidacion','mes_nombre','nombrefas','deposito'];
+const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_nombre','nombre_prod'];
+const sums=['neto','neto_flete','metros_cubicos','importe_flete'];
+const numericColumns=[...sums,'diferencia'];
+const tableDimensions=dimensions.filter(k=>k!=='mes_liquidacion');
+const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs'];
+const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete / MCS'];
+const $=id=>document.getElementById(id);
+const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
+const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:3,maximumFractionDigits:3});
+let rows=[],groups=[],page=0,sortKey='origen',direction=1,ready=false;
+const PAGE_SIZE=100;
+let chartPage=0;const CHART_PAGE_SIZE=8;
+function text(value){return value==null?'':String(value).trim();}
+function number(value){
+ if(value==null||value==='')return 0;
+ if(typeof value==='number'){if(Number.isFinite(value))return value;throw Error('Se encontró un número inválido.');}
+ let s=String(value).trim().replace(/\s/g,'');
+ if(!s)return 0;
+ if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+ const n=Number(s);if(!Number.isFinite(n))throw Error('Valor numérico inválido: '+value);return n;
+}
+const months=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SETIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+function monthOrder(value){const v=text(value).toLocaleUpperCase('es');return months.indexOf(v==='SEPTIEMBRE'?'SETIEMBRE':v);}
+function normalize(r){
+ const m=text(r.fecharto).match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/);
+ if(!m)throw Error('Fecha inválida: '+r.fecharto);
+ const year=Number(m[1]),month=Number(m[2]),day=Number(m[3]);
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)throw Error('Fecha inválida: '+r.fecharto);
+ const rawMonth=text(r.mes);
+ const monthName=rawMonth.toLocaleUpperCase('es');
+ const monthIndex=months.indexOf(monthName==='SEPTIEMBRE'?'SETIEMBRE':monthName);
+ if(monthIndex<0)throw Error('Mes del JSON no reconocido: '+r.mes);
+ const rawYear=text(r.ano);
+ if(!/^\d{4}$/.test(rawYear))throw Error('Año del JSON no válido: '+r.ano);
+ const p={nombrefas:text(r.nombrefas),origen:text(r.origen),deposito:text(r.deposito),nombre_prod:text(r.nombreprod2),
+ anio_liquidacion:rawYear,mes_liquidacion:String(monthIndex+1),mes_nombre:rawMonth};
+ for(const k of sums)p[k]=number(r[k]);
+ // Neto de remitos2 ya está en toneladas. Neto flete viene en kg.
+ p.neto_flete/=1000;
+ p.sin_mcs=r.metros_cubicos==null||text(r.metros_cubicos)==='';
+ p.sin_importe=r.importe_flete==null||text(r.importe_flete)==='';
+ return p;
+}
+function compare(a,b){return String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'});}
+function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
+const filterLabels={anio_liquidacion:'Año',mes_nombre:'Nombre del mes',quincena:'Quincena',nombrefas:'Nombre FAS',deposito:'Depósito'};
+// null = todas; Set vacío = ninguna.
+const selections=Object.fromEntries(filters.map(k=>[k,null]));
+function matches(row,except){return filters.every(k=>k===except||selections[k]===null||selections[k].has(row[k]));}
+function options(){
+ for(const k of filters){
+  const container=$('options_'+k),values=[...new Set(rows.map(r=>r[k]))].sort(k==='mes_nombre'?(a,b)=>monthOrder(a)-monthOrder(b):compare);
+  const available=new Set(rows.filter(r=>matches(r,k)).map(r=>r[k]));
+  container.replaceChildren();
+  for(const value of values){
+   const label=document.createElement('label');label.className='choice';
+   const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selections[k]===null||selections[k].has(value);
+   const span=document.createElement('span');span.textContent=value||'(Sin dato)';
+   label.classList.toggle('unavailable',!available.has(value));
+   checkbox.onchange=()=>{
+    if(selections[k]===null)selections[k]=new Set(values);
+    if(checkbox.checked)selections[k].add(value);else selections[k].delete(value);
+    if(selections[k].size===values.length)selections[k]=null;
+    apply();
+   };
+   label.append(checkbox,span);container.append(label);
+  }
+  const selected=selections[k]===null?values.length:selections[k].size;
+  $('summary_'+k).textContent=filterLabels[k]+': '+(selections[k]===null?'Todos':selected===0?'Ninguno':selected+' seleccionados');
+ }
+}
+function buildFilters(){
+ for(const k of filters){
+  const details=document.createElement('details');details.className='multi';
+  const summary=document.createElement('summary');summary.id='summary_'+k;summary.textContent=filterLabels[k]+': Todos';
+  const popup=document.createElement('div');popup.className='filter-popup';
+  const actions=document.createElement('div');actions.className='filter-actions';
+  const all=document.createElement('button');all.textContent='Marcar todas';all.onclick=()=>{selections[k]=null;apply();};
+  const none=document.createElement('button');none.textContent='Quitar todas';none.onclick=()=>{selections[k]=new Set();apply();};
+  const container=document.createElement('div');container.id='options_'+k;container.className='choices';
+  actions.append(all,none);popup.append(actions,container);details.append(summary,popup);$('filters').append(details);
+ }
+ document.addEventListener('click',event=>{document.querySelectorAll('.multi[open]').forEach(d=>{if(!d.contains(event.target))d.open=false;});});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.multi[open]').forEach(d=>d.open=false);});
+}
+function aggregate(source){
+ const map=new Map();
+ for(const row of source){
+  const key=JSON.stringify(dimensions.map(k=>row[k]));
+  if(!map.has(key))map.set(key,{...Object.fromEntries(dimensions.map(k=>[k,row[k]])),neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0});
+  const group=map.get(key);for(const k of sums)group[k]+=row[k];
+ }
+ return [...map.values()].map(g=>({...g,diferencia:g.neto_flete-g.neto,densidad:g.metros_cubicos===0?null:g.neto/g.metros_cubicos,flete_mcs:g.metros_cubicos===0?null:g.importe_flete/g.metros_cubicos}));
+}
+function totals(){const t={neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0};for(const g of groups)for(const k of sums)t[k]+=g[k];t.diferencia=t.neto_flete-t.neto;t.densidad=t.metros_cubicos===0?null:t.neto/t.metros_cubicos;t.flete_mcs=t.metros_cubicos===0?null:t.importe_flete/t.metros_cubicos;return t;}
+function display(k,v){if(k==='flete_mcs')return v==null?'—':fmt.format(v);return k==='densidad'?(v==null?'—':densityFmt.format(v)):numericColumns.includes(k)?fmt.format(v):v||'—';}
+function cell(tr,value){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+function render(){
+ groups.sort((a,b)=>{if(a[sortKey]==null)return b[sortKey]==null?0:1;if(b[sortKey]==null)return -1;return direction*(numericColumns.includes(sortKey)||(sortKey==='densidad'||sortKey==='flete_mcs')?a[sortKey]-b[sortKey]:compare(a[sortKey],b[sortKey]));});
+ const t=totals();for(const k of ['neto','neto_flete','metros_cubicos','densidad'])$(k).textContent=display(k,t[k]);
+ $('body').replaceChildren();
+ for(const g of groups.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE)){const tr=document.createElement('tr');for(const k of columns)cell(tr,display(k,g[k]));$('body').append(tr);}
+ if(!groups.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=columns.length;td.textContent=ready?'No hay registros para estos filtros.':'Esperando datos…';tr.append(td);$('body').append(tr);}
+ const totalRow=document.createElement('tr');const title=document.createElement('td');title.colSpan=tableDimensions.length;title.textContent='TOTAL FILTRADO';totalRow.append(title);for(const k of columns.slice(tableDimensions.length))cell(totalRow,display(k,t[k]));$('footer').replaceChildren(totalRow);
+ $('count').textContent=groups.length.toLocaleString('es-UY')+' grupos';
+ const pages=Math.max(1,Math.ceil(groups.length/PAGE_SIZE));$('page').textContent=`Página ${page+1} de ${pages}`;$('prev').disabled=page===0;$('next').disabled=page+1>=pages;$('export').disabled=!groups.length;
+ document.querySelectorAll('th').forEach((th,i)=>{th.setAttribute('aria-sort',columns[i]===sortKey?(direction===1?'ascending':'descending'):'none');th.firstChild.textContent=labels[i]+(columns[i]===sortKey?(direction===1?' ▲':' ▼'):'');});
+}
+function chartGroups(source){
+ const keys=['origen','nombre_prod','anio_liquidacion','mes_liquidacion','mes_nombre','deposito'];
+ const map=new Map();
+ for(const row of source){
+  const key=JSON.stringify(keys.map(k=>row[k]));
+  if(!map.has(key))map.set(key,{...Object.fromEntries(keys.map(k=>[k,row[k]])),importe:0,mcs:0,neto:0});
+  const group=map.get(key);group.importe+=row.importe_flete;group.mcs+=row.metros_cubicos;group.neto+=row.neto;
+ }
+ return [...map.values()].map(g=>({...g,value:g.mcs===0?null:g.importe/g.mcs,density:g.mcs===0?null:g.neto/g.mcs}));
+}
+function renderChart(){
+ const data=chartGroups(rows.filter(r=>matches(r)));
+ const map=new Map();
+ for(const g of data){
+  const key=JSON.stringify([g.origen,g.nombre_prod,g.anio_liquidacion,g.deposito]);
+  if(!map.has(key))map.set(key,{label:g.origen+' · '+g.nombre_prod+' · '+g.anio_liquidacion+' · '+g.deposito,points:new Map(),densities:new Map()});
+  map.get(key).points.set(Number(g.mes_liquidacion)-1,g.value);
+  map.get(key).densities.set(Number(g.mes_liquidacion)-1,g.density);
+ }
+ const series=[...map.values()].filter(s=>[...s.points.values()].some(v=>v!==null)).sort((a,b)=>compare(a.label,b.label));
+ const pages=Math.max(1,Math.ceil(series.length/CHART_PAGE_SIZE));chartPage=Math.min(chartPage,pages-1);
+ const shown=series.slice(chartPage*CHART_PAGE_SIZE,(chartPage+1)*CHART_PAGE_SIZE);
+ $('chart-count').textContent=series.length+' series';$('chart-page').textContent='Página '+(chartPage+1)+' de '+pages;
+ $('chart-prev').disabled=chartPage===0;$('chart-next').disabled=chartPage+1>=pages;
+ const target=$('chart');target.replaceChildren();
+ if(!series.length){const p=document.createElement('p');p.className='chart-empty';p.textContent='No hay datos con metros cúbicos distintos de cero para estos filtros.';target.append(p);return;}
+ const ns='http://www.w3.org/2000/svg',width=1260,height=440,left=100,right=1210,top=75,bottom=365;
+ const values=series.flatMap(s=>[...s.points.values()].filter(v=>v!==null));
+ const min=Math.min(0,...values),max=Math.max(0,...values),upper=max===min?max+1:max;
+ const activeMonths=[...new Set(series.flatMap(s=>[...s.points.entries()].filter(([m,v])=>v!==null).map(([m])=>m)))].sort((a,b)=>a-b);
+ const x=m=>activeMonths.length===1?(left+right)/2:left+activeMonths.indexOf(m)/(activeMonths.length-1)*(right-left);
+ const y=v=>bottom-(v-min)/(upper-min)*(bottom-top);
+ const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 '+width+' '+height);
+ function el(type,attrs,label){const n=document.createElementNS(ns,type);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(label!=null)n.textContent=label;svg.append(n);return n;}
+ for(let i=0;i<=5;i++){const value=min+(upper-min)*i/5,py=y(value);el('line',{x1:left,x2:right,y1:py,y2:py,stroke:'#e1e9e4'});el('text',{x:left-10,y:py+4,'text-anchor':'end',fill:'#61746a','font-size':12},fmt.format(value));}
+ activeMonths.forEach(m=>{el('text',{x:x(m),y:bottom+25,'text-anchor':'middle',fill:'#61746a','font-size':12},months[m].slice(0,3));});
+ el('text',{x:left,y:18,fill:'#21372d','font-size':13},'Flete / MCS');
+ el('line',{x1:left,x2:right,y1:y(0),y2:y(0),stroke:'#91a79b'});
+ const palette=['#164b3c','#277da8','#d48b22','#8c5bb3','#bb4857','#468840','#357c7b','#9b6728','#5564b1','#bd6e32','#804c64','#5797ad','#77783b','#7b57aa','#31692b'];
+ const legend=document.createElement('div');legend.className='chart-legend';
+ shown.forEach((s,i)=>{
+  const color=palette[i%palette.length];let path='',previous=false;
+  for(const m of activeMonths){
+   const v=s.points.get(m);
+   if(v==null){previous=false;continue;}
+   path+=(previous?' L ':' M ')+x(m)+' '+y(v);previous=true;
+  }
+  el('path',{d:path,fill:'none',stroke:color,'stroke-width':2.5,'stroke-linejoin':'round'});
+  for(const [m,v] of s.points){
+   if(v==null)continue;
+   const dot=el('circle',{cx:x(m),cy:y(v),r:4.5,fill:color});
+   const title=document.createElementNS(ns,'title');
+   title.textContent=s.label+' · '+months[m]+' · Flete/MCS: '+fmt.format(v)+' · Densidad: '+densityFmt.format(s.densities.get(m));dot.append(title);
+   const anchor=m===activeMonths[0]?'start':m===activeMonths[activeMonths.length-1]?'end':'middle';
+   const tx=x(m)+(anchor==='start'?6:anchor==='end'?-6:0);
+   const label=el('text',{x:tx,y:y(v)-26,'text-anchor':anchor,fill:color,'font-size':11,'font-weight':'bold',stroke:'white','stroke-width':3,'paint-order':'stroke'});
+   const first=document.createElementNS(ns,'tspan');first.setAttribute('x',tx);first.textContent='Flete/MCS: '+fmt.format(v);
+   const second=document.createElementNS(ns,'tspan');second.setAttribute('x',tx);second.setAttribute('dy',14);second.textContent='Densidad: '+densityFmt.format(s.densities.get(m));label.append(first,second);
+  }
+  const item=document.createElement('div');item.className='legend-item';const swatch=document.createElement('span');swatch.className='legend-swatch';swatch.style.background=color;const label=document.createElement('span');label.textContent=s.label;item.append(swatch,label);legend.append(item);
+ });
+ target.append(svg,legend);
+}
+function apply(){options();const filtered=rows.filter(r=>matches(r));groups=aggregate(filtered);page=0;chartPage=0;render();renderChart();if(ready)status(filtered.length.toLocaleString('es-UY')+' registros. Sin metros cúbicos: '+filtered.filter(r=>r.sin_mcs).length+'. Sin importe flete: '+filtered.filter(r=>r.sin_importe).length+'. Las sumas incluyen solo los valores disponibles.');}
+async function load(){
+ $('refresh').disabled=true;status('Cargando datos de Dropbox…');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
+ try{
+  const response=await fetch(URL_JSON,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status);
+  const data=await response.json();const source=Array.isArray(data)?data:data.datos;
+  if(!Array.isArray(source))throw Error('El JSON debe contener un arreglo llamado datos.');
+  const required=['fecharto','ano','mes','origen','nombrefas','deposito','nombreprod2',...sums];
+  const parsed=source.map((r,i)=>{
+   if(!r||typeof r!=='object'||required.some(k=>!(k in r)))throw Error('Faltan columnas en el registro '+(i+1));
+   return normalize(r);
+  });
+  rows=parsed.filter(r=>text(r.origen).replace(/\s+/g,' ').toLocaleLowerCase('es')!=='sin origen');ready=true;$('updated').textContent='Actualización del archivo: '+(text(data.actualizado)||'No informada');apply();
+ }catch(e){status((ready?'Se conservan los datos anteriores. ':'')+'No se pudo cargar el JSON. '+(e.name==='AbortError'?'Se agotó el tiempo de espera.':e.message)+' Verificá el enlace y que Dropbox permita la lectura desde esta página.',true);}
+ finally{clearTimeout(timer);$('refresh').disabled=false;}
+}
+columns.forEach((k,i)=>{const th=document.createElement('th'),button=document.createElement('button');button.textContent=labels[i];button.onclick=()=>{direction=sortKey===k?-direction:1;sortKey=k;render();};th.append(button);$('headers').append(th);});
+buildFilters();
+$('clear').onclick=()=>{filters.forEach(k=>selections[k]=null);apply();};$('refresh').onclick=load;
+$('prev').onclick=()=>{page--;render();};$('next').onclick=()=>{page++;render();};
+$('export').onclick=()=>{
+ const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const csvRow=g=>columns.map(k=>quote(numericColumns.includes(k)||k==='densidad'||k==='flete_mcs'?(g[k]==null?'':Number(g[k]).toFixed(k==='densidad'?3:2).replace('.',',')):g[k])).join(';');
+ const csv=[labels.map(quote).join(';'),...groups.map(csvRow),csvRow({...totals(),origen:'TOTAL FILTRADO'})].join('\r\n');
+ const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='LiquidacionMetrosCubicos.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$('chart-prev').onclick=()=>{chartPage--;renderChart();};
+$('chart-next').onclick=()=>{chartPage++;renderChart();};
+render();renderChart();load();
+</script>
+</body>
+</html>
 <style>
 :root{--verde:#164b3c;--fondo:#f3f6f5;--borde:#dce5e0}*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:#21372d;font:14px Arial,sans-serif}main{max-width:1600px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}h1{font-size:25px;margin:0 0 8px}p{margin:0;color:#61746a}button,select{font:inherit;border-radius:7px;border:1px solid var(--borde);padding:10px;background:white;color:#21372d}button{cursor:pointer}button.primary{background:var(--verde);color:white}button:disabled{opacity:.5;cursor:wait}.filters,.cards{display:grid;gap:12px;margin-bottom:18px}.filters{grid-template-columns:repeat(4,minmax(0,1fr));background:white;padding:16px;border:1px solid var(--borde);border-radius:12px}label{font-weight:bold;font-size:12px}select{display:block;width:100%;margin-top:7px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:white;border:1px solid var(--borde);border-top:3px solid var(--verde);border-radius:10px;text-align:center;padding:15px}.card span{color:#61746a;font-size:12px}.card strong{display:block;font-size:23px;margin-top:7px}.panel{border:1px solid var(--borde);border-radius:12px;background:white;overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px}.scroll{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:11px 8px;text-align:center;border-bottom:1px solid #e8eeea}th{position:sticky;top:0;background:var(--verde);color:white;z-index:1}th button{color:inherit;background:none;border:0;padding:0;width:100%;font-weight:bold;font-size:12px}tbody tr:nth-child(even){background:#f6f9f7}tbody tr:hover{background:#eaf3ee}td:first-child,td:nth-child(7){max-width:210px;overflow-wrap:anywhere}tfoot{font-weight:bold;background:#e4eee8}#status{margin:10px 0;line-height:1.5}#status.error{color:#ad2626}.pager{display:flex;align-items:center;justify-content:center;gap:15px;padding:12px}.note{font-size:12px;margin-top:14px;line-height:1.5}@media(max-width:800px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters label:last-child{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}.card strong{font-size:20px}table{min-width:1050px}.toolbar{flex-wrap:wrap}}
 .filters{position:relative;align-items:start}.multi{position:relative;min-width:0}.multi summary{padding:12px;border:1px solid var(--borde);border-radius:7px;background:white;cursor:pointer;font-weight:bold;line-height:1.4;font-size:12px;overflow-wrap:anywhere}.multi[open]{z-index:10}.filter-popup{position:absolute;top:calc(100% + 6px);left:0;width:max(100%,260px);max-width:calc(100vw - 40px);background:white;border:1px solid var(--borde);border-radius:10px;padding:10px;box-shadow:0 10px 30px #164b3c25}.filter-actions{display:flex;gap:6px;margin-bottom:8px}.filter-actions button{font-size:11px;padding:7px;flex:1}.choices{max-height:280px;overflow:auto}.choice{display:flex;gap:9px;align-items:center;padding:9px 5px;font-size:12px;cursor:pointer;font-weight:normal;border-radius:5px}.choice:hover{background:#edf4ef}.choice input{margin:0;width:17px;height:17px;flex-shrink:0;accent-color:var(--verde)}.choice span{overflow-wrap:anywhere}.choice.unavailable{color:#829087}@media(max-width:800px){.multi:nth-child(even) .filter-popup{left:auto;right:0}.filters label:last-child{grid-column:auto}}
