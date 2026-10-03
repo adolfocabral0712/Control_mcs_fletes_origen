@@ -66,10 +66,10 @@ function usdForDate(date){
 const filters=['anio_liquidacion','mes_nombre','nombrefas','deposito'];
 const dimensions=['origen','deposito','anio_liquidacion','mes_liquidacion','mes_nombre','nombre_prod'];
 const sums=['neto','neto_flete','metros_cubicos','importe_flete'];
-const numericColumns=[...sums,'diferencia','usd_promedio'];
+const numericColumns=[...sums,'diferencia','usd_promedio','flete_usd_mcs'];
 const tableDimensions=dimensions.filter(k=>k!=='mes_liquidacion');
-const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs','usd_promedio'];
-const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete / MCS','Cotización USD promedio'];
+const columns=[...tableDimensions,'neto','neto_flete','diferencia','metros_cubicos','importe_flete','densidad','flete_mcs','usd_promedio','flete_usd_mcs'];
+const labels=['Origen','Depósito','Año','Nombre del mes','Producto','Neto (t)','Neto flete (t)','Diferencia (t)','Metros cúbicos','Importe flete','Densidad (t/m³)','Flete $ / Mcs','Cotización USD promedio','Flete USD / Mcs'];
 const $=id=>document.getElementById(id);
 const fmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const densityFmt=new Intl.NumberFormat('es-UY',{minimumFractionDigits:3,maximumFractionDigits:3});
@@ -161,10 +161,10 @@ function aggregate(source){
   if(!map.has(key))map.set(key,{...Object.fromEntries(dimensions.map(k=>[k,row[k]])),neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0,usd_sum:0,usd_count:0});
   const group=map.get(key);for(const k of sums)group[k]+=row[k];if(row.usd_promedio!==null){group.usd_sum+=row.usd_promedio;group.usd_count++;}
  }
- return [...map.values()].map(g=>({...g,usd_promedio:g.usd_count?g.usd_sum/g.usd_count:null,diferencia:g.neto_flete-g.neto,densidad:g.metros_cubicos===0?null:g.neto/g.metros_cubicos,flete_mcs:g.metros_cubicos===0?null:g.importe_flete/g.metros_cubicos}));
+ return [...map.values()].map(g=>({...g,usd_promedio:g.usd_count?g.usd_sum/g.usd_count:null,diferencia:g.neto_flete-g.neto,densidad:g.metros_cubicos===0?null:g.neto/g.metros_cubicos,flete_mcs:g.metros_cubicos===0?null:g.importe_flete/g.metros_cubicos,flete_usd_mcs:g.metros_cubicos===0||!g.usd_count||g.usd_sum===0?null:g.importe_flete/(g.usd_sum/g.usd_count)/g.metros_cubicos}));
 }
-function totals(){const t={neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0,usd_sum:0,usd_count:0};for(const g of groups){for(const k of sums)t[k]+=g[k];t.usd_sum+=g.usd_sum;t.usd_count+=g.usd_count;}t.usd_promedio=t.usd_count?t.usd_sum/t.usd_count:null;t.diferencia=t.neto_flete-t.neto;t.densidad=t.metros_cubicos===0?null:t.neto/t.metros_cubicos;t.flete_mcs=t.metros_cubicos===0?null:t.importe_flete/t.metros_cubicos;return t;}
-function display(k,v){if(k==='usd_promedio'&&v==null)return '—';if(k==='flete_mcs')return v==null?'—':fmt.format(v);return k==='densidad'?(v==null?'—':densityFmt.format(v)):numericColumns.includes(k)?fmt.format(v):v||'—';}
+function totals(){const t={neto:0,neto_flete:0,metros_cubicos:0,importe_flete:0,usd_sum:0,usd_count:0};for(const g of groups){for(const k of sums)t[k]+=g[k];t.usd_sum+=g.usd_sum;t.usd_count+=g.usd_count;}t.usd_promedio=t.usd_count?t.usd_sum/t.usd_count:null;t.diferencia=t.neto_flete-t.neto;t.densidad=t.metros_cubicos===0?null:t.neto/t.metros_cubicos;t.flete_mcs=t.metros_cubicos===0?null:t.importe_flete/t.metros_cubicos;t.flete_usd_mcs=t.metros_cubicos===0||!t.usd_promedio?null:t.importe_flete/t.usd_promedio/t.metros_cubicos;return t;}
+function display(k,v){if((k==='usd_promedio'||k==='flete_usd_mcs')&&v==null)return '—';if(k==='flete_mcs')return v==null?'—':fmt.format(v);return k==='densidad'?(v==null?'—':densityFmt.format(v)):numericColumns.includes(k)?fmt.format(v):v||'—';}
 function cell(tr,value){const td=document.createElement('td');td.textContent=value;tr.append(td);}
 function render(){
  groups.sort((a,b)=>{if(a[sortKey]==null)return b[sortKey]==null?0:1;if(b[sortKey]==null)return -1;return direction*(numericColumns.includes(sortKey)||(sortKey==='densidad'||sortKey==='flete_mcs')?a[sortKey]-b[sortKey]:compare(a[sortKey],b[sortKey]));});
